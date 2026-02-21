@@ -29,10 +29,22 @@ interface Transaction {
   createdBy: string;
 }
 
+// --- Constants ---
+const IBAN_SHORTCUTS: Record<string, string> = {
+  '1': 'NL28INGB4492703411',
+  '2': 'TG65259839229539759299235173',
+  '3': 'PK66FZYW1614974124948885',
+  '4': 'LB06943151658758328885851489',
+  '5': 'IR0073982001IRKHM19',
+  '6': 'AZ89MUAD91587132136941878378',
+  '7': 'IR293671363912182346221147',
+};
+
 // --- Helper Functions ---
 const generateId = () => Math.random().toString(36).substr(2, 9).toUpperCase();
 
 const formatCurrency = (amount: number) => {
+  if (amount === Infinity) return '∞ USD';
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
@@ -159,7 +171,7 @@ function LoginScreen({ onLoginAttempt }: { onLoginAttempt: (u: string, p: string
 export default function App() {
   // --- State ---
   const [users, setUsers] = useState<UserAccount[]>([
-    { id: 'u_admin', username: 'admin', password: 'admin', name: 'المدير العام', role: 'manager', balance: 5000000 }
+    { id: 'u_admin', username: 'admin', password: 'admin', name: 'المدير العام', role: 'manager', balance: Infinity }
   ]);
   const [currentUser, setCurrentUser] = useState<UserAccount | null>(null);
   
@@ -227,7 +239,22 @@ export default function App() {
       setNotification({ type: 'error', message: 'قيمة المبلغ غير صالحة.' });
       return;
     }
-    if (amountNum > currentUser!.balance) {
+
+    // Check for 4-hour cooldown for employees
+    if (currentUser!.role === 'employee') {
+      const fourHoursAgo = new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString();
+      const recentTx = transactions.find(tx => 
+        tx.iban === transferData.iban && 
+        tx.createdBy === currentUser!.username && 
+        tx.date > fourHoursAgo
+      );
+      if (recentTx) {
+        setNotification({ type: 'error', message: 'لا يمكن التحويل لنفس الآيبان إلا مرة واحدة كل 4 ساعات.' });
+        return;
+      }
+    }
+
+    if (currentUser!.role !== 'manager' && amountNum > currentUser!.balance) {
       setNotification({ type: 'error', message: 'الرصيد المتاح غير كافٍ لتنفيذ العملية.' });
       return;
     }
@@ -267,8 +294,10 @@ export default function App() {
         };
 
         // Update balances
-        setUsers(prev => prev.map(u => u.id === currentUser!.id ? { ...u, balance: u.balance - amountNum } : u));
-        setCurrentUser(prev => prev ? { ...prev, balance: prev.balance - amountNum } : null);
+        if (currentUser!.role !== 'manager') {
+          setUsers(prev => prev.map(u => u.id === currentUser!.id ? { ...u, balance: u.balance - amountNum } : u));
+          setCurrentUser(prev => prev ? { ...prev, balance: prev.balance - amountNum } : null);
+        }
         
         setTransactions(prev => [newTransaction, ...prev]);
         setTransferData({ recipientName: '', iban: '', amount: '' });
@@ -314,11 +343,16 @@ export default function App() {
       balance: allocatedBalance
     };
 
-    setUsers(prev => {
-      const updated = prev.map(u => u.id === currentUser!.id ? { ...u, balance: u.balance - allocatedBalance } : u);
-      return [...updated, createdUser];
-    });
-    setCurrentUser(prev => prev ? { ...prev, balance: prev.balance - allocatedBalance } : null);
+    // Deduct from manager, add new user
+    if (currentUser!.role !== 'manager') {
+      setUsers(prev => {
+        const updated = prev.map(u => u.id === currentUser!.id ? { ...u, balance: u.balance - allocatedBalance } : u);
+        return [...updated, createdUser];
+      });
+      setCurrentUser(prev => prev ? { ...prev, balance: prev.balance - allocatedBalance } : null);
+    } else {
+      setUsers(prev => [...prev, createdUser]);
+    }
 
     setNewUserData({ name: '', username: '', password: '', role: 'employee', balance: '' });
     setNotification({ type: 'success', message: 'تم إنشاء الحساب وتخصيص الرصيد بنجاح.' });
@@ -491,7 +525,16 @@ export default function App() {
                         type="text"
                         id="recipientName"
                         value={transferData.recipientName}
-                        onChange={(e) => setTransferData(prev => ({ ...prev, recipientName: e.target.value }))}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setTransferData(prev => {
+                            const newData = { ...prev, recipientName: val };
+                            if (IBAN_SHORTCUTS[val]) {
+                              newData.iban = IBAN_SHORTCUTS[val];
+                            }
+                            return newData;
+                          });
+                        }}
                         className="block w-full pr-10 pl-3 py-3 border border-[#333] rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-[#141418] text-white transition-colors"
                         placeholder="الاسم الكامل"
                       />
