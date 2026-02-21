@@ -4,6 +4,7 @@ import {
   Building2, User, CreditCard, LogOut, LayoutDashboard, Shield, Briefcase, 
   Calculator, Menu, X, Activity, Lock, Users, Plus, Terminal, ShieldCheck, Globe
 } from 'lucide-react';
+import { supabase } from './lib/supabase';
 
 // --- Types ---
 type Role = 'manager' | 'employee' | 'accountant';
@@ -170,9 +171,7 @@ function LoginScreen({ onLoginAttempt }: { onLoginAttempt: (u: string, p: string
 
 export default function App() {
   // --- State ---
-  const [users, setUsers] = useState<UserAccount[]>([
-    { id: 'u_admin', username: 'admin', password: 'admin', name: 'المدير العام', role: 'manager', balance: Infinity }
-  ]);
+  const [users, setUsers] = useState<UserAccount[]>([]);
   const [currentUser, setCurrentUser] = useState<UserAccount | null>(null);
   
   const [currentView, setCurrentView] = useState<View>('overview');
@@ -198,6 +197,45 @@ export default function App() {
     "جاري تنفيذ الحوالة بسرعة فائقة وبدون تعقب...",
     "مسح آثار الاتصال وتأكيد العملية بنجاح..."
   ];
+
+  // --- Initial Data Fetching ---
+  useEffect(() => {
+    fetchInitialData();
+  }, []);
+
+  const fetchInitialData = async () => {
+    try {
+      // Fetch Users
+      const { data: usersData, error: usersError } = await supabase
+        .from('users')
+        .select('*');
+      
+      if (usersError) throw usersError;
+      if (usersData) setUsers(usersData);
+
+      // Fetch Transactions
+      const { data: txData, error: txError } = await supabase
+        .from('transactions')
+        .select('*')
+        .order('date', { ascending: false });
+      
+      if (txError) throw txError;
+      if (txData) {
+        const formattedTx: Transaction[] = txData.map(tx => ({
+          id: tx.id,
+          date: tx.date,
+          recipientName: tx.recipient_name,
+          iban: tx.iban,
+          amount: tx.amount,
+          status: tx.status,
+          createdBy: tx.created_by
+        }));
+        setTransactions(formattedTx);
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
+  };
 
   // --- Derived Data ---
   const totalTransferred = transactions.filter(tx => tx.createdBy === currentUser?.username).reduce((sum, tx) => sum + tx.amount, 0);
@@ -283,8 +321,9 @@ export default function App() {
       if (progress >= 100) {
         clearInterval(interval);
         
+        const txId = `TX-${generateId()}`;
         const newTransaction: Transaction = {
-          id: `TX-${generateId()}`,
+          id: txId,
           date: new Date().toISOString(),
           recipientName: transferData.recipientName,
           iban: transferData.iban,
@@ -293,17 +332,50 @@ export default function App() {
           createdBy: currentUser!.username
         };
 
-        // Update balances
-        if (currentUser!.role !== 'manager') {
-          setUsers(prev => prev.map(u => u.id === currentUser!.id ? { ...u, balance: u.balance - amountNum } : u));
-          setCurrentUser(prev => prev ? { ...prev, balance: prev.balance - amountNum } : null);
-        }
-        
-        setTransactions(prev => [newTransaction, ...prev]);
-        setTransferData({ recipientName: '', iban: '', amount: '' });
-        setIsSubmitting(false);
-        setNotification({ type: 'success', message: 'تم تنفيذ الحوالة بنجاح وبسرية تامة.' });
+        // Sync with Supabase
+        const performSync = async () => {
+          try {
+            // Insert Transaction
+            const { error: txError } = await supabase
+              .from('transactions')
+              .insert([{
+                id: txId,
+                date: newTransaction.date,
+                recipient_name: newTransaction.recipientName,
+                iban: newTransaction.iban,
+                amount: newTransaction.amount,
+                status: newTransaction.status,
+                created_by: newTransaction.createdBy
+              }]);
+            
+            if (txError) throw txError;
 
+            // Update balances
+            if (currentUser!.role !== 'manager') {
+              const newBalance = currentUser!.balance - amountNum;
+              const { error: userError } = await supabase
+                .from('users')
+                .update({ balance: newBalance })
+                .eq('id', currentUser!.id);
+              
+              if (userError) throw userError;
+
+              setUsers(prev => prev.map(u => u.id === currentUser!.id ? { ...u, balance: newBalance } : u));
+              setCurrentUser(prev => prev ? { ...prev, balance: newBalance } : null);
+            }
+            
+            setTransactions(prev => [newTransaction, ...prev]);
+            setTransferData({ recipientName: '', iban: '', amount: '' });
+            setIsSubmitting(false);
+            setNotification({ type: 'success', message: 'تم تنفيذ الحوالة بنجاح وبسرية تامة.' });
+          } catch (error) {
+            console.error('Sync error:', error);
+            setIsSubmitting(false);
+            setNotification({ type: 'error', message: 'حدث خطأ أثناء مزامنة البيانات مع السحابة.' });
+          }
+        };
+
+        performSync();
         setTimeout(() => setNotification(null), 8000);
       }
     }, intervalMs);
@@ -343,19 +415,43 @@ export default function App() {
       balance: allocatedBalance
     };
 
-    // Deduct from manager, add new user
-    if (currentUser!.role !== 'manager') {
-      setUsers(prev => {
-        const updated = prev.map(u => u.id === currentUser!.id ? { ...u, balance: u.balance - allocatedBalance } : u);
-        return [...updated, createdUser];
-      });
-      setCurrentUser(prev => prev ? { ...prev, balance: prev.balance - allocatedBalance } : null);
-    } else {
-      setUsers(prev => [...prev, createdUser]);
-    }
+    const syncUser = async () => {
+      try {
+        // Insert new user
+        const { error: insertError } = await supabase
+          .from('users')
+          .insert([createdUser]);
+        
+        if (insertError) throw insertError;
 
-    setNewUserData({ name: '', username: '', password: '', role: 'employee', balance: '' });
-    setNotification({ type: 'success', message: 'تم إنشاء الحساب وتخصيص الرصيد بنجاح.' });
+        // Deduct from manager, add new user
+        if (currentUser!.role !== 'manager') {
+          const newManagerBalance = currentUser!.balance - allocatedBalance;
+          const { error: updateError } = await supabase
+            .from('users')
+            .update({ balance: newManagerBalance })
+            .eq('id', currentUser!.id);
+          
+          if (updateError) throw updateError;
+
+          setUsers(prev => {
+            const updated = prev.map(u => u.id === currentUser!.id ? { ...u, balance: newManagerBalance } : u);
+            return [...updated, createdUser];
+          });
+          setCurrentUser(prev => prev ? { ...prev, balance: newManagerBalance } : null);
+        } else {
+          setUsers(prev => [...prev, createdUser]);
+        }
+
+        setNewUserData({ name: '', username: '', password: '', role: 'employee', balance: '' });
+        setNotification({ type: 'success', message: 'تم إنشاء الحساب وتخصيص الرصيد بنجاح.' });
+      } catch (error) {
+        console.error('User sync error:', error);
+        setNotification({ type: 'error', message: 'حدث خطأ أثناء حفظ بيانات المستخدم الجديد.' });
+      }
+    };
+
+    syncUser();
     setTimeout(() => setNotification(null), 5000);
   };
 
