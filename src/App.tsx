@@ -2,8 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { 
   Wallet, Send, History, CheckCircle2, AlertCircle, Clock, ArrowUpRight,
   Building2, User, CreditCard, LogOut, LayoutDashboard, Shield, Briefcase, 
-  Calculator, Menu, X, Activity, Lock, Users, Plus, Terminal, ShieldCheck, Globe
+  Calculator, Menu, X, Activity, Lock, Users, Plus, Terminal, ShieldCheck, Globe,
+  Trash2, Zap, Satellite, Landmark
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import confetti from 'canvas-confetti';
 import { supabase } from './lib/supabase';
 
 // --- Types ---
@@ -18,6 +21,7 @@ interface UserAccount {
   name: string;
   role: Role;
   balance: number;
+  isUnlimited?: boolean;
 }
 
 interface Transaction {
@@ -41,11 +45,170 @@ const IBAN_SHORTCUTS: Record<string, string> = {
   '7': 'IR293671363912182346221147',
 };
 
+// --- Animation Component ---
+function TransferAnimation({ onComplete }: { onComplete: () => void }) {
+  const [step, setStep] = useState(0);
+  const duration = 50000; // 50 seconds
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onComplete();
+      confetti({
+        particleCount: 150,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#10b981', '#3b82f6', '#ffffff']
+      });
+    }, duration);
+
+    // Progress steps for visual feedback
+    const stepInterval = setInterval(() => {
+      setStep(prev => (prev < 100 ? prev + 1 : 100));
+    }, duration / 100);
+
+    return () => {
+      clearTimeout(timer);
+      clearInterval(stepInterval);
+    };
+  }, [onComplete]);
+
+  return (
+    <div className="fixed inset-0 z-[100] bg-[#050505] flex flex-col items-center justify-center overflow-hidden p-4">
+      <div className="absolute inset-0 opacity-20">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-emerald-500/20 via-transparent to-transparent"></div>
+        <div className="grid grid-cols-12 h-full w-full opacity-10">
+          {Array.from({ length: 144 }).map((_, i) => (
+            <div key={i} className="border-[0.5px] border-emerald-500/30 h-full w-full"></div>
+          ))}
+        </div>
+      </div>
+
+      <div className="relative w-full max-w-4xl aspect-video flex items-center justify-center">
+        {/* Earth */}
+        <motion.div 
+          animate={{ rotate: 360 }}
+          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+          className="relative z-10 w-32 h-32 sm:w-48 sm:h-48 rounded-full bg-blue-600 shadow-[0_0_50px_rgba(37,99,235,0.4)] flex items-center justify-center overflow-hidden border-4 border-blue-400/30"
+        >
+          <Globe size={80} className="text-blue-200 opacity-80" />
+          <div className="absolute inset-0 bg-gradient-to-tr from-black/40 to-transparent"></div>
+        </motion.div>
+
+        {/* Satellite 1 */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0, x: 200, y: -150 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 5 }}
+          className="absolute z-20 top-1/4 right-1/4"
+        >
+          <div className="relative">
+            <Satellite size={40} className="text-slate-400" />
+            <motion.div 
+              animate={{ opacity: [0.2, 1, 0.2] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              className="absolute -inset-2 bg-blue-500/20 rounded-full blur-md"
+            ></motion.div>
+          </div>
+        </motion.div>
+
+        {/* Satellite 2 */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0, x: -200, y: -180 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 15 }}
+          className="absolute z-20 top-1/4 left-1/4"
+        >
+          <div className="relative">
+            <Satellite size={40} className="text-slate-400" />
+            <motion.div 
+              animate={{ opacity: [0.2, 1, 0.2] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              className="absolute -inset-2 bg-emerald-500/20 rounded-full blur-md"
+            ></motion.div>
+          </div>
+        </motion.div>
+
+        {/* Bank Icon */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0, y: 150 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 35 }}
+          className="absolute z-20 bottom-1/4 left-1/2 -translate-x-1/2"
+        >
+          <div className="p-6 bg-[#111] border-2 border-emerald-500/50 rounded-2xl shadow-[0_0_30px_rgba(16,185,129,0.3)]">
+            <Landmark size={48} className="text-emerald-500" />
+          </div>
+        </motion.div>
+
+        {/* Connection Lines */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none z-15">
+          {/* Earth to Sat 1 */}
+          <motion.line 
+            initial={{ pathLength: 0, opacity: 0 }}
+            animate={{ pathLength: 1, opacity: 1 }}
+            transition={{ duration: 5, delay: 2 }}
+            x1="50%" y1="50%" x2="75%" y2="25%" 
+            stroke="#3b82f6" strokeWidth="2" strokeDasharray="5,5"
+          />
+          {/* Sat 1 to Sat 2 */}
+          <motion.line 
+            initial={{ pathLength: 0, opacity: 0 }}
+            animate={{ pathLength: 1, opacity: 1 }}
+            transition={{ duration: 10, delay: 10 }}
+            x1="75%" y1="25%" x2="25%" y2="25%" 
+            stroke="#3b82f6" strokeWidth="2" strokeDasharray="5,5"
+          />
+          {/* Sat 2 to Earth */}
+          <motion.line 
+            initial={{ pathLength: 0, opacity: 0 }}
+            animate={{ pathLength: 1, opacity: 1 }}
+            transition={{ duration: 10, delay: 25 }}
+            x1="25%" y1="25%" x2="50%" y2="50%" 
+            stroke="#10b981" strokeWidth="2" strokeDasharray="5,5"
+          />
+          {/* Earth to Bank */}
+          <motion.line 
+            initial={{ pathLength: 0, opacity: 0 }}
+            animate={{ pathLength: 1, opacity: 1 }}
+            transition={{ duration: 5, delay: 35 }}
+            x1="50%" y1="50%" x2="50%" y2="75%" 
+            stroke="#10b981" strokeWidth="3"
+          />
+        </svg>
+      </div>
+
+      <div className="mt-12 w-full max-w-md space-y-6 text-center">
+        <div className="space-y-2">
+          <h2 className="text-2xl font-bold text-white tracking-tight">جاري تنفيذ عملية التحويل العابر للقارات</h2>
+          <p className="text-emerald-500 font-mono text-sm animate-pulse">SECURE_SATELLITE_LINK_ESTABLISHED</p>
+        </div>
+
+        <div className="relative h-2 bg-[#111] rounded-full overflow-hidden border border-[#222]">
+          <motion.div 
+            initial={{ width: 0 }}
+            animate={{ width: `${step}%` }}
+            className="absolute inset-y-0 left-0 bg-gradient-to-r from-blue-500 to-emerald-500"
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 text-[10px] font-mono text-slate-500">
+          <div className="p-2 bg-[#0a0a0a] border border-[#222] rounded">
+            LATENCY: {(Math.random() * 50 + 10).toFixed(2)}ms
+          </div>
+          <div className="p-2 bg-[#0a0a0a] border border-[#222] rounded">
+            ENCRYPTION: QUANTUM_READY
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // --- Helper Functions ---
 const generateId = () => Math.random().toString(36).substr(2, 9).toUpperCase();
 
-const formatCurrency = (amount: number) => {
-  if (amount === Infinity) return '∞ USD';
+const formatCurrency = (amount: number, isUnlimited?: boolean) => {
+  if (amount === Infinity || isUnlimited) return '∞ USD';
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
@@ -181,10 +344,11 @@ export default function App() {
 
   // Forms State
   const [transferData, setTransferData] = useState({ recipientName: '', iban: '', amount: '' });
-  const [newUserData, setNewUserData] = useState({ name: '', username: '', password: '', role: 'employee' as Role, balance: '' });
+  const [newUserData, setNewUserData] = useState({ name: '', username: '', password: '', role: 'employee' as Role, balance: '', isUnlimited: false });
   
   // Transfer Progress State
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showAnimation, setShowAnimation] = useState(false);
   const [transferProgress, setTransferProgress] = useState(0);
   const [transferMessage, setTransferMessage] = useState('');
   const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
@@ -218,7 +382,8 @@ export default function App() {
           // Map manager balance to Infinity for frontend logic
           const mappedUsers = usersData.map((u: any) => ({
             ...u,
-            balance: u.role === 'manager' ? Infinity : u.balance
+            balance: (u.role === 'manager' || u.is_unlimited) ? Infinity : u.balance,
+            isUnlimited: u.is_unlimited
           }));
           setUsers(mappedUsers);
           
@@ -229,9 +394,9 @@ export default function App() {
           }
         } else {
           // If DB is empty, try to seed the initial admin
-          const initialAdmin = { id: 'u_admin', username: 'admin', password: 'admin', name: 'المدير العام', role: 'manager', balance: 999999999 };
+          const initialAdmin = { id: 'u_admin', username: 'admin', password: 'admin', name: 'المدير العام', role: 'manager', balance: 999999999, is_unlimited: true };
           const { error: seedError } = await supabase.from('users').insert([initialAdmin]);
-          if (!seedError) setUsers([{ ...initialAdmin, balance: Infinity }]);
+          if (!seedError) setUsers([{ ...initialAdmin, balance: Infinity, isUnlimited: true }]);
         }
       }
 
@@ -316,103 +481,84 @@ export default function App() {
       }
     }
 
-    if (currentUser!.role !== 'manager' && amountNum > currentUser!.balance) {
+    if (currentUser!.role !== 'manager' && !currentUser!.isUnlimited && amountNum > currentUser!.balance) {
       setNotification({ type: 'error', message: 'الرصيد المتاح غير كافٍ لتنفيذ العملية.' });
       return;
     }
 
     setIsSubmitting(true);
-    setTransferProgress(0);
-    setTransferMessage(secureMessages[0]);
+    setShowAnimation(true);
+  };
 
-    let progress = 0;
-    const totalTimeMs = 30000; // 30 seconds
-    const intervalMs = 100;
-    const step = 100 / (totalTimeMs / intervalMs);
+  const handleAnimationComplete = () => {
+    setShowAnimation(false);
+    const amountNum = parseFloat(transferData.amount);
+    const txId = `TX-${generateId()}`;
+    const newTransaction: Transaction = {
+      id: txId,
+      date: new Date().toISOString(),
+      recipientName: transferData.recipientName,
+      iban: transferData.iban,
+      amount: amountNum,
+      status: 'completed',
+      createdBy: currentUser!.username
+    };
 
-    const interval = setInterval(() => {
-      progress += step;
-      if (progress > 100) progress = 100;
-      
-      setTransferProgress(progress);
-
-      if (progress > 15 && progress <= 30) setTransferMessage(secureMessages[1]);
-      else if (progress > 30 && progress <= 50) setTransferMessage(secureMessages[2]);
-      else if (progress > 50 && progress <= 70) setTransferMessage(secureMessages[3]);
-      else if (progress > 70 && progress <= 90) setTransferMessage(secureMessages[4]);
-      else if (progress > 90) setTransferMessage(secureMessages[5]);
-
-      if (progress >= 100) {
-        clearInterval(interval);
+    // Sync with Supabase
+    const performSync = async () => {
+      try {
+        // Insert Transaction
+        const { error: txError } = await supabase
+          .from('transactions')
+          .insert([{
+            id: txId,
+            date: newTransaction.date,
+            recipient_name: newTransaction.recipientName,
+            iban: newTransaction.iban,
+            amount: newTransaction.amount,
+            status: newTransaction.status,
+            created_by: newTransaction.createdBy
+          }]);
         
-        const txId = `TX-${generateId()}`;
-        const newTransaction: Transaction = {
-          id: txId,
-          date: new Date().toISOString(),
-          recipientName: transferData.recipientName,
-          iban: transferData.iban,
-          amount: amountNum,
-          status: 'completed',
-          createdBy: currentUser!.username
-        };
+        if (txError) throw txError;
 
-        // Sync with Supabase
-        const performSync = async () => {
-          try {
-            // Insert Transaction
-            const { error: txError } = await supabase
-              .from('transactions')
-              .insert([{
-                id: txId,
-                date: newTransaction.date,
-                recipient_name: newTransaction.recipientName,
-                iban: newTransaction.iban,
-                amount: newTransaction.amount,
-                status: newTransaction.status,
-                created_by: newTransaction.createdBy
-              }]);
-            
-            if (txError) throw txError;
+        // Update balances
+        if (currentUser!.role !== 'manager' && !currentUser!.isUnlimited) {
+          const newBalance = currentUser!.balance - amountNum;
+          const { error: userError } = await supabase
+            .from('users')
+            .update({ balance: newBalance })
+            .eq('id', currentUser!.id);
+          
+          if (userError) throw userError;
 
-            // Update balances
-            if (currentUser!.role !== 'manager') {
-              const newBalance = currentUser!.balance - amountNum;
-              const { error: userError } = await supabase
-                .from('users')
-                .update({ balance: newBalance })
-                .eq('id', currentUser!.id);
-              
-              if (userError) throw userError;
-
-              setUsers(prev => prev.map(u => u.id === currentUser!.id ? { ...u, balance: newBalance } : u));
-              setCurrentUser(prev => prev ? { ...prev, balance: newBalance } : null);
-            }
-            
-            setTransactions(prev => [newTransaction, ...prev]);
-            setTransferData({ recipientName: '', iban: '', amount: '' });
-            setIsSubmitting(false);
-            setNotification({ type: 'success', message: 'تم تنفيذ الحوالة بنجاح وبسرية تامة.' });
-          } catch (error: any) {
-            console.error('Sync error:', error);
-            setIsSubmitting(false);
-            setNotification({ 
-              type: 'error', 
-              message: `خطأ في المزامنة: ${error.message || 'تأكد من إعدادات RLS والمتغيرات البيئية'}` 
-            });
-          }
-        };
-
-        performSync();
-        setTimeout(() => setNotification(null), 8000);
+          setUsers(prev => prev.map(u => u.id === currentUser!.id ? { ...u, balance: newBalance } : u));
+          setCurrentUser(prev => prev ? { ...prev, balance: newBalance } : null);
+        }
+        
+        setTransactions(prev => [newTransaction, ...prev]);
+        setTransferData({ recipientName: '', iban: '', amount: '' });
+        setIsSubmitting(false);
+        setNotification({ type: 'success', message: 'تم تنفيذ الحوالة بنجاح وبسرية تامة.' });
+      } catch (error: any) {
+        console.error('Sync error:', error);
+        setIsSubmitting(false);
+        setNotification({ 
+          type: 'error', 
+          message: `خطأ في المزامنة: ${error.message || 'تأكد من إعدادات RLS والمتغيرات البيئية'}` 
+        });
       }
-    }, intervalMs);
+    };
+
+    performSync();
+    setTimeout(() => setNotification(null), 8000);
   };
 
   const handleAddUser = (e: React.FormEvent) => {
     e.preventDefault();
     setNotification(null);
 
-    if (!newUserData.name || !newUserData.username || !newUserData.password || !newUserData.balance) {
+    if (!newUserData.name || !newUserData.username || !newUserData.password || (!newUserData.isUnlimited && !newUserData.balance)) {
       setNotification({ type: 'error', message: 'يرجى تعبئة جميع الحقول.' });
       return;
     }
@@ -422,13 +568,13 @@ export default function App() {
       return;
     }
 
-    const allocatedBalance = parseFloat(newUserData.balance);
-    if (isNaN(allocatedBalance) || allocatedBalance < 0) {
+    const allocatedBalance = newUserData.isUnlimited ? 999999999 : parseFloat(newUserData.balance);
+    if (!newUserData.isUnlimited && (isNaN(allocatedBalance) || allocatedBalance < 0)) {
       setNotification({ type: 'error', message: 'قيمة الرصيد غير صالحة.' });
       return;
     }
 
-    if (currentUser!.role !== 'manager' && allocatedBalance > currentUser!.balance) {
+    if (currentUser!.role !== 'manager' && !currentUser!.isUnlimited && allocatedBalance > currentUser!.balance) {
       setNotification({ type: 'error', message: 'الرصيد المتاح لا يغطي التخصيص المطلوب.' });
       return;
     }
@@ -439,7 +585,8 @@ export default function App() {
       username: newUserData.username,
       password: newUserData.password,
       role: newUserData.role,
-      balance: allocatedBalance
+      balance: newUserData.isUnlimited ? Infinity : allocatedBalance,
+      isUnlimited: newUserData.isUnlimited
     };
 
     const syncUser = async () => {
@@ -447,12 +594,20 @@ export default function App() {
         // Insert new user
         const { error: insertError } = await supabase
           .from('users')
-          .insert([createdUser]);
+          .insert([{
+            id: createdUser.id,
+            name: createdUser.name,
+            username: createdUser.username,
+            password: createdUser.password,
+            role: createdUser.role,
+            balance: newUserData.isUnlimited ? 999999999 : allocatedBalance,
+            is_unlimited: createdUser.isUnlimited
+          }]);
         
         if (insertError) throw insertError;
 
         // Deduct from manager, add new user
-        if (currentUser!.role !== 'manager') {
+        if (currentUser!.role !== 'manager' && !currentUser!.isUnlimited) {
           const newManagerBalance = currentUser!.balance - allocatedBalance;
           const { error: updateError } = await supabase
             .from('users')
@@ -470,7 +625,7 @@ export default function App() {
           setUsers(prev => [...prev, createdUser]);
         }
 
-        setNewUserData({ name: '', username: '', password: '', role: 'employee', balance: '' });
+        setNewUserData({ name: '', username: '', password: '', role: 'employee', balance: '', isUnlimited: false });
         setNotification({ type: 'success', message: 'تم إنشاء الحساب وتخصيص الرصيد بنجاح.' });
       } catch (error: any) {
         console.error('User sync error:', error);
@@ -483,6 +638,52 @@ export default function App() {
 
     syncUser();
     setTimeout(() => setNotification(null), 5000);
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    if (userId === currentUser?.id) {
+      setNotification({ type: 'error', message: 'لا يمكنك حذف حسابك الحالي.' });
+      return;
+    }
+
+    if (!window.confirm('هل أنت متأكد من رغبتك في حذف هذا المستخدم نهائياً؟')) return;
+
+    try {
+      const { error } = await supabase
+        .from('users')
+        .delete()
+        .eq('id', userId);
+      
+      if (error) throw error;
+
+      setUsers(prev => prev.filter(u => u.id !== userId));
+      setNotification({ type: 'success', message: 'تم حذف المستخدم بنجاح.' });
+    } catch (error: any) {
+      setNotification({ type: 'error', message: `فشل الحذف: ${error.message}` });
+    }
+  };
+
+  const handleRechargeUser = async (userId: string, amount: number, isUnlimited: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({ 
+          balance: isUnlimited ? 999999999 : amount,
+          is_unlimited: isUnlimited
+        })
+        .eq('id', userId);
+      
+      if (error) throw error;
+
+      setUsers(prev => prev.map(u => u.id === userId ? { 
+        ...u, 
+        balance: isUnlimited ? Infinity : amount,
+        isUnlimited: isUnlimited 
+      } : u));
+      setNotification({ type: 'success', message: 'تم تحديث رصيد المستخدم بنجاح.' });
+    } catch (error: any) {
+      setNotification({ type: 'error', message: `فشل الشحن: ${error.message}` });
+    }
   };
 
   // --- Render logic ---
@@ -516,7 +717,7 @@ export default function App() {
                     </h2>
                   </div>
                   <div className="text-3xl font-mono font-bold text-white tracking-tight" dir="ltr">
-                    {formatCurrency(currentUser.balance)}
+                    {formatCurrency(currentUser.balance, currentUser.isUnlimited)}
                   </div>
                   <div className="mt-4 pt-4 border-t border-[#222] flex items-center justify-between text-xs text-slate-500 font-mono">
                     <span>STATUS: ACTIVE</span>
@@ -604,7 +805,7 @@ export default function App() {
                   تحويل آمن ومشفّر
                 </h2>
                 <div className="text-xs font-mono font-bold text-slate-400 bg-[#0a0a0a] px-3 py-2 rounded border border-[#333]">
-                  الرصيد: <span className="text-white" dir="ltr">{formatCurrency(currentUser.balance)}</span>
+                  الرصيد: <span className="text-white" dir="ltr">{formatCurrency(currentUser.balance, currentUser.isUnlimited)}</span>
                 </div>
               </div>
 
@@ -787,20 +988,37 @@ export default function App() {
                         <option value="accountant">محاسب مالي</option>
                       </select>
                     </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-400 mb-1.5">
-                        الرصيد المخصص (USD)
-                      </label>
-                      <input
-                        type="number"
-                        value={newUserData.balance}
-                        onChange={(e) => setNewUserData(prev => ({ ...prev, balance: e.target.value }))}
-                        min="0"
-                        className="block w-full px-3 py-2.5 border border-[#333] rounded-lg focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm bg-[#141418] text-white transition-colors font-mono text-left"
-                        dir="ltr"
-                      />
-                      <p className="text-[10px] text-slate-500 mt-1 font-mono">AVAILABLE: {formatCurrency(currentUser.balance)}</p>
+                    <div className="flex items-center gap-4">
+                      <div className="flex-1">
+                        <label className="block text-xs font-bold text-slate-400 mb-1.5">
+                          الرصيد المخصص (USD)
+                        </label>
+                        <input
+                          type="number"
+                          value={newUserData.balance}
+                          disabled={newUserData.isUnlimited}
+                          onChange={(e) => setNewUserData(prev => ({ ...prev, balance: e.target.value }))}
+                          min="0"
+                          className="block w-full px-3 py-2.5 border border-[#333] rounded-lg focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm bg-[#141418] text-white transition-colors font-mono text-left disabled:opacity-50"
+                          dir="ltr"
+                        />
+                      </div>
+                      <div className="pt-6">
+                        <label className="flex items-center gap-2 cursor-pointer group">
+                          <div className={`w-10 h-5 rounded-full transition-colors relative ${newUserData.isUnlimited ? 'bg-emerald-500' : 'bg-[#222]'}`}>
+                            <input 
+                              type="checkbox" 
+                              className="sr-only" 
+                              checked={newUserData.isUnlimited}
+                              onChange={(e) => setNewUserData(prev => ({ ...prev, isUnlimited: e.target.checked }))}
+                            />
+                            <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${newUserData.isUnlimited ? 'left-6' : 'left-1'}`}></div>
+                          </div>
+                          <span className="text-[10px] font-bold text-slate-500 group-hover:text-slate-300">إنفينيتي</span>
+                        </label>
+                      </div>
                     </div>
+                    <p className="text-[10px] text-slate-500 mt-1 font-mono">AVAILABLE: {formatCurrency(currentUser.balance, currentUser.isUnlimited)}</p>
                     <button
                       type="submit"
                       className="w-full flex justify-center items-center gap-2 py-3 px-4 border border-emerald-500/50 rounded-lg text-sm font-bold text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500 hover:text-[#050505] transition-all active:scale-[0.98] mt-4"
@@ -832,6 +1050,7 @@ export default function App() {
                           <th className="px-6 py-4">المعرف</th>
                           <th className="px-6 py-4">المستوى</th>
                           <th className="px-6 py-4">الرصيد (USD)</th>
+                          <th className="px-6 py-4">إجراءات</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-[#222]">
@@ -845,7 +1064,35 @@ export default function App() {
                               </span>
                             </td>
                             <td className="px-6 py-4 font-mono font-bold text-white text-sm" dir="ltr">
-                              {formatCurrency(u.balance)}
+                              {formatCurrency(u.balance, u.isUnlimited)}
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-2">
+                                <button 
+                                  onClick={() => {
+                                    const amount = prompt('أدخل المبلغ الجديد أو "inf" للرصيد اللانهائي:', u.isUnlimited ? 'inf' : u.balance.toString());
+                                    if (amount !== null) {
+                                      if (amount.toLowerCase() === 'inf') {
+                                        handleRechargeUser(u.id, 999999999, true);
+                                      } else {
+                                        const num = parseFloat(amount);
+                                        if (!isNaN(num)) handleRechargeUser(u.id, num, false);
+                                      }
+                                    }
+                                  }}
+                                  className="p-2 text-emerald-500 hover:bg-emerald-500/10 rounded-lg transition-colors"
+                                  title="شحن الرصيد"
+                                >
+                                  <Zap size={16} />
+                                </button>
+                                <button 
+                                  onClick={() => handleDeleteUser(u.id)}
+                                  className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                                  title="حذف المستخدم"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         ))}
@@ -1024,14 +1271,19 @@ export default function App() {
           </div>
         </header>
 
-        {/* Main Scrollable Area */}
-        <main className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 custom-scrollbar">
+        {/* View Content */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 custom-scrollbar">
           <div className="max-w-6xl mx-auto">
             {renderView()}
           </div>
-        </main>
+        </div>
       </div>
 
+      <AnimatePresence>
+        {showAnimation && (
+          <TransferAnimation onComplete={handleAnimationComplete} />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
