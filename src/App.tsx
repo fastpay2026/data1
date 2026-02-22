@@ -48,20 +48,30 @@ const IBAN_SHORTCUTS: Record<string, string> = {
 // --- Animation Component ---
 function TransferAnimation({ onComplete }: { onComplete: () => void }) {
   const [step, setStep] = useState(0);
-  const duration = 50000; // 50 seconds
+  const duration = 60000; // 60 seconds exactly
+
+  // Currency symbols positions (relative %)
+  const currencies = [
+    { symbol: '$', x: '20%', y: '30%', delay: 2 },
+    { symbol: '€', x: '45%', y: '35%', delay: 5 },
+    { symbol: '$', x: '75%', y: '25%', delay: 8 },
+    { symbol: '€', x: '30%', y: '60%', delay: 11 },
+    { symbol: '$', x: '60%', y: '70%', delay: 14 },
+    { symbol: '€', x: '85%', y: '65%', delay: 17 },
+    { symbol: '$', x: '50%', y: '20%', delay: 20 },
+  ];
 
   useEffect(() => {
     const timer = setTimeout(() => {
       onComplete();
       confetti({
-        particleCount: 150,
-        spread: 70,
+        particleCount: 200,
+        spread: 100,
         origin: { y: 0.6 },
-        colors: ['#10b981', '#3b82f6', '#ffffff']
+        colors: ['#00f2ff', '#0066ff', '#ffffff']
       });
     }, duration);
 
-    // Progress steps for visual feedback
     const stepInterval = setInterval(() => {
       setStep(prev => (prev < 100 ? prev + 1 : 100));
     }, duration / 100);
@@ -73,131 +83,129 @@ function TransferAnimation({ onComplete }: { onComplete: () => void }) {
   }, [onComplete]);
 
   return (
-    <div className="fixed inset-0 z-[100] bg-[#050505] flex flex-col items-center justify-center overflow-hidden p-4">
-      <div className="absolute inset-0 opacity-20">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-emerald-500/20 via-transparent to-transparent"></div>
-        <div className="grid grid-cols-12 h-full w-full opacity-10">
-          {Array.from({ length: 144 }).map((_, i) => (
-            <div key={i} className="border-[0.5px] border-emerald-500/30 h-full w-full"></div>
+    <div className="fixed inset-0 z-[100] bg-[#050505] flex flex-col items-center justify-center overflow-hidden">
+      {/* Background Glow */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_#003366_0%,_transparent_70%)] opacity-30"></div>
+      
+      <div className="relative w-full max-w-5xl aspect-video flex items-center justify-center p-8">
+        {/* World Map Background (The image provided by user) */}
+        <div className="absolute inset-0 opacity-40 mix-blend-screen">
+          <img 
+            src="https://images.unsplash.com/photo-1589519160732-57fc498494f8?q=80&w=2070&auto=format&fit=crop" 
+            alt="World Map" 
+            className="w-full h-full object-contain filter brightness-50 contrast-125"
+            referrerPolicy="no-referrer"
+          />
+        </div>
+
+        {/* SVG Overlay for Neon Effects */}
+        <svg className="absolute inset-0 w-full h-full z-20" viewBox="0 0 1000 600">
+          <defs>
+            <filter id="neonGlow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="5" result="blur" />
+              <feComposite in="SourceGraphic" in2="blur" operator="over" />
+            </filter>
+            <filter id="strongGlow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="10" result="blur" />
+              <feComposite in="SourceGraphic" in2="blur" operator="over" />
+            </filter>
+          </defs>
+
+          {/* Sequential Currency Glow */}
+          {currencies.map((c, i) => (
+            <motion.g
+              key={i}
+              initial={{ opacity: 0, scale: 0 }}
+              animate={{ 
+                opacity: step > (c.delay / 60 * 100) ? 1 : 0,
+                scale: step > (c.delay / 60 * 100) ? [1, 1.2, 1] : 0,
+              }}
+              transition={{ duration: 1, repeat: Infinity, repeatDelay: 3 }}
+            >
+              <text
+                x={c.x}
+                y={c.y}
+                fill="#00f2ff"
+                fontSize="40"
+                fontWeight="bold"
+                filter="url(#neonGlow)"
+                className="font-mono"
+              >
+                {c.symbol}
+              </text>
+            </motion.g>
           ))}
-        </div>
-      </div>
 
-      <div className="relative w-full max-w-4xl aspect-video flex items-center justify-center">
-        {/* Earth */}
-        <motion.div 
-          animate={{ rotate: 360 }}
-          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-          className="relative z-10 w-32 h-32 sm:w-48 sm:h-48 rounded-full bg-blue-600 shadow-[0_0_50px_rgba(37,99,235,0.4)] flex items-center justify-center overflow-hidden border-4 border-blue-400/30"
-        >
-          <Globe size={80} className="text-blue-200 opacity-80" />
-          <div className="absolute inset-0 bg-gradient-to-tr from-black/40 to-transparent"></div>
-        </motion.div>
-
-        {/* Satellite 1 */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0, x: 200, y: -150 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 5 }}
-          className="absolute z-20 top-1/4 right-1/4"
-        >
-          <div className="relative">
-            <Satellite size={40} className="text-slate-400" />
-            <motion.div 
-              animate={{ opacity: [0.2, 1, 0.2] }}
-              transition={{ duration: 2, repeat: Infinity }}
-              className="absolute -inset-2 bg-blue-500/20 rounded-full blur-md"
-            ></motion.div>
-          </div>
-        </motion.div>
-
-        {/* Satellite 2 */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0, x: -200, y: -180 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 15 }}
-          className="absolute z-20 top-1/4 left-1/4"
-        >
-          <div className="relative">
-            <Satellite size={40} className="text-slate-400" />
-            <motion.div 
-              animate={{ opacity: [0.2, 1, 0.2] }}
-              transition={{ duration: 2, repeat: Infinity }}
-              className="absolute -inset-2 bg-emerald-500/20 rounded-full blur-md"
-            ></motion.div>
-          </div>
-        </motion.div>
-
-        {/* Bank Icon */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0, y: 150 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 35 }}
-          className="absolute z-20 bottom-1/4 left-1/2 -translate-x-1/2"
-        >
-          <div className="p-6 bg-[#111] border-2 border-emerald-500/50 rounded-2xl shadow-[0_0_30px_rgba(16,185,129,0.3)]">
-            <Landmark size={48} className="text-emerald-500" />
-          </div>
-        </motion.div>
-
-        {/* Connection Lines */}
-        <svg className="absolute inset-0 w-full h-full pointer-events-none z-15">
-          {/* Earth to Sat 1 */}
-          <motion.line 
+          {/* Map Contours Lighting Up (Gradual) */}
+          <motion.path
+            d="M150,200 L250,150 L400,180 L550,150 L750,180 L850,250 L800,450 L600,500 L400,480 L200,450 Z" // Simplified world path
+            fill="none"
+            stroke="#00f2ff"
+            strokeWidth="2"
+            filter="url(#strongGlow)"
             initial={{ pathLength: 0, opacity: 0 }}
-            animate={{ pathLength: 1, opacity: 1 }}
-            transition={{ duration: 5, delay: 2 }}
-            x1="50%" y1="50%" x2="75%" y2="25%" 
-            stroke="#3b82f6" strokeWidth="2" strokeDasharray="5,5"
+            animate={{ 
+              pathLength: step > 40 ? (step - 40) / 60 : 0,
+              opacity: step > 40 ? 0.8 : 0 
+            }}
+            transition={{ duration: 0.5 }}
           />
-          {/* Sat 1 to Sat 2 */}
-          <motion.line 
-            initial={{ pathLength: 0, opacity: 0 }}
-            animate={{ pathLength: 1, opacity: 1 }}
-            transition={{ duration: 10, delay: 10 }}
-            x1="75%" y1="25%" x2="25%" y2="25%" 
-            stroke="#3b82f6" strokeWidth="2" strokeDasharray="5,5"
-          />
-          {/* Sat 2 to Earth */}
-          <motion.line 
-            initial={{ pathLength: 0, opacity: 0 }}
-            animate={{ pathLength: 1, opacity: 1 }}
-            transition={{ duration: 10, delay: 25 }}
-            x1="25%" y1="25%" x2="50%" y2="50%" 
-            stroke="#10b981" strokeWidth="2" strokeDasharray="5,5"
-          />
-          {/* Earth to Bank */}
-          <motion.line 
-            initial={{ pathLength: 0, opacity: 0 }}
-            animate={{ pathLength: 1, opacity: 1 }}
-            transition={{ duration: 5, delay: 35 }}
-            x1="50%" y1="50%" x2="50%" y2="75%" 
-            stroke="#10b981" strokeWidth="3"
-          />
+
+          {/* Connection Lines */}
+          {step > 20 && (
+            <motion.path
+              d="M200,300 Q500,100 800,300"
+              fill="none"
+              stroke="#0066ff"
+              strokeWidth="1"
+              strokeDasharray="10,10"
+              initial={{ pathLength: 0 }}
+              animate={{ pathLength: 1 }}
+              transition={{ duration: 30, ease: "linear" }}
+            />
+          )}
         </svg>
+
+        {/* Central Status */}
+        <div className="relative z-30 text-center space-y-8">
+          <motion.div
+            animate={{ 
+              scale: [1, 1.05, 1],
+              textShadow: ["0 0 10px #00f2ff", "0 0 30px #00f2ff", "0 0 10px #00f2ff"]
+            }}
+            transition={{ duration: 2, repeat: Infinity }}
+            className="text-4xl font-black text-white tracking-widest uppercase"
+          >
+            جاري المزامنة العالمية
+          </motion.div>
+          
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-96 h-1.5 bg-[#111] rounded-full overflow-hidden border border-[#222] relative">
+              <motion.div 
+                className="absolute inset-y-0 left-0 bg-gradient-to-r from-[#0066ff] to-[#00f2ff] shadow-[0_0_15px_#00f2ff]"
+                style={{ width: `${step}%` }}
+              />
+            </div>
+            <div className="text-emerald-500 font-mono text-xl">
+              {step}% <span className="text-slate-500 ml-2">| SECURE_CHANNEL_ACTIVE</span>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="mt-12 w-full max-w-md space-y-6 text-center">
+      {/* Bottom Info */}
+      <div className="absolute bottom-12 w-full max-w-4xl px-8 grid grid-cols-3 gap-8 text-[10px] font-mono text-slate-500 uppercase tracking-widest">
+        <div className="space-y-2 border-l border-[#222] pl-4">
+          <p className="text-white">Protocol: AES-XTS-512</p>
+          <p>Status: Encrypting Payload</p>
+        </div>
+        <div className="space-y-2 border-l border-[#222] pl-4">
+          <p className="text-white">Relay: Satellite-V4</p>
+          <p>Location: Global Grid</p>
+        </div>
         <div className="space-y-2">
-          <h2 className="text-2xl font-bold text-white tracking-tight">جاري تنفيذ عملية التحويل العابر للقارات</h2>
-          <p className="text-emerald-500 font-mono text-sm animate-pulse">SECURE_SATELLITE_LINK_ESTABLISHED</p>
-        </div>
-
-        <div className="relative h-2 bg-[#111] rounded-full overflow-hidden border border-[#222]">
-          <motion.div 
-            initial={{ width: 0 }}
-            animate={{ width: `${step}%` }}
-            className="absolute inset-y-0 left-0 bg-gradient-to-r from-blue-500 to-emerald-500"
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-4 text-[10px] font-mono text-slate-500">
-          <div className="p-2 bg-[#0a0a0a] border border-[#222] rounded">
-            LATENCY: {(Math.random() * 50 + 10).toFixed(2)}ms
-          </div>
-          <div className="p-2 bg-[#0a0a0a] border border-[#222] rounded">
-            ENCRYPTION: QUANTUM_READY
-          </div>
+          <p className="text-white">Time: {Math.max(0, 60 - Math.floor(step * 0.6))}s Remaining</p>
+          <p>Verification: Pending</p>
         </div>
       </div>
     </div>
