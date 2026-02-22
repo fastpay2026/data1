@@ -210,8 +210,30 @@ export default function App() {
         .from('users')
         .select('*');
       
-      if (usersError) throw usersError;
-      if (usersData) setUsers(usersData);
+      if (usersError) {
+        console.error('Supabase Users Error:', usersError);
+        setNotification({ type: 'error', message: `فشل جلب المستخدمين: ${usersError.message}` });
+      } else {
+        if (usersData && usersData.length > 0) {
+          // Map manager balance to Infinity for frontend logic
+          const mappedUsers = usersData.map((u: any) => ({
+            ...u,
+            balance: u.role === 'manager' ? Infinity : u.balance
+          }));
+          setUsers(mappedUsers);
+          
+          // Update currentUser if already logged in (e.g. on refresh)
+          if (currentUser) {
+            const updatedMe = mappedUsers.find(u => u.id === currentUser.id);
+            if (updatedMe) setCurrentUser(updatedMe);
+          }
+        } else {
+          // If DB is empty, try to seed the initial admin
+          const initialAdmin = { id: 'u_admin', username: 'admin', password: 'admin', name: 'المدير العام', role: 'manager', balance: 999999999 };
+          const { error: seedError } = await supabase.from('users').insert([initialAdmin]);
+          if (!seedError) setUsers([{ ...initialAdmin, balance: Infinity }]);
+        }
+      }
 
       // Fetch Transactions
       const { data: txData, error: txError } = await supabase
@@ -219,8 +241,9 @@ export default function App() {
         .select('*')
         .order('date', { ascending: false });
       
-      if (txError) throw txError;
-      if (txData) {
+      if (txError) {
+        console.error('Supabase TX Error:', txError);
+      } else if (txData) {
         const formattedTx: Transaction[] = txData.map(tx => ({
           id: tx.id,
           date: tx.date,
@@ -232,8 +255,9 @@ export default function App() {
         }));
         setTransactions(formattedTx);
       }
-    } catch (error) {
-      console.error('Error fetching data:', error);
+    } catch (error: any) {
+      console.error('Connection Error:', error);
+      setNotification({ type: 'error', message: 'تعذر الاتصال بقاعدة البيانات. تأكد من إعدادات Vercel.' });
     }
   };
 
@@ -368,10 +392,13 @@ export default function App() {
             setTransferData({ recipientName: '', iban: '', amount: '' });
             setIsSubmitting(false);
             setNotification({ type: 'success', message: 'تم تنفيذ الحوالة بنجاح وبسرية تامة.' });
-          } catch (error) {
+          } catch (error: any) {
             console.error('Sync error:', error);
             setIsSubmitting(false);
-            setNotification({ type: 'error', message: 'حدث خطأ أثناء مزامنة البيانات مع السحابة.' });
+            setNotification({ 
+              type: 'error', 
+              message: `خطأ في المزامنة: ${error.message || 'تأكد من إعدادات RLS والمتغيرات البيئية'}` 
+            });
           }
         };
 
@@ -401,7 +428,7 @@ export default function App() {
       return;
     }
 
-    if (allocatedBalance > currentUser!.balance) {
+    if (currentUser!.role !== 'manager' && allocatedBalance > currentUser!.balance) {
       setNotification({ type: 'error', message: 'الرصيد المتاح لا يغطي التخصيص المطلوب.' });
       return;
     }
@@ -445,9 +472,12 @@ export default function App() {
 
         setNewUserData({ name: '', username: '', password: '', role: 'employee', balance: '' });
         setNotification({ type: 'success', message: 'تم إنشاء الحساب وتخصيص الرصيد بنجاح.' });
-      } catch (error) {
+      } catch (error: any) {
         console.error('User sync error:', error);
-        setNotification({ type: 'error', message: 'حدث خطأ أثناء حفظ بيانات المستخدم الجديد.' });
+        setNotification({ 
+          type: 'error', 
+          message: `خطأ في حفظ المستخدم: ${error.message || 'تأكد من صلاحيات الجدول (RLS)'}` 
+        });
       }
     };
 
@@ -896,31 +926,34 @@ export default function App() {
       {/* Mobile Sidebar Overlay */}
       {isSidebarOpen && (
         <div 
-          className="fixed inset-0 bg-black/80 z-40 lg:hidden backdrop-blur-sm"
+          className="fixed inset-0 bg-black/80 z-40 lg:hidden backdrop-blur-sm transition-opacity duration-300"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
 
       {/* Sidebar */}
-      <aside className={`fixed inset-y-0 right-0 z-50 w-72 bg-[#0a0a0a] border-l border-[#222] transition-transform transform ${isSidebarOpen ? 'translate-x-0' : 'translate-x-full'} lg:translate-x-0 lg:static lg:block flex flex-col`}>
+      <aside className={`
+        fixed inset-y-0 right-0 z-50 w-72 bg-[#0a0a0a] border-l border-[#222] transition-transform duration-300 ease-in-out flex flex-col
+        ${isSidebarOpen ? 'translate-x-0' : 'translate-x-full'} lg:translate-x-0 lg:static lg:block
+      `}>
         <div className="h-16 flex items-center justify-between px-6 border-b border-[#222] bg-[#050505]">
           <div className="flex items-center gap-3 text-white">
             <ShieldCheck size={24} className="text-emerald-500" />
             <span className="font-bold text-lg tracking-tight">نظام التحويلات</span>
           </div>
-          <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden text-slate-500 hover:text-white">
+          <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden text-slate-500 hover:text-white transition-colors">
             <X size={24} />
           </button>
         </div>
 
         <div className="p-6 border-b border-[#222] bg-[#0a0a0a]">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-[#111] border border-[#333] flex items-center justify-center text-white font-mono font-bold text-xl">
+            <div className="w-12 h-12 rounded-xl bg-[#111] border border-[#333] flex items-center justify-center text-white font-mono font-bold text-xl shrink-0">
               {currentUser.username.substring(0, 2).toUpperCase()}
             </div>
-            <div>
-              <p className="text-white font-bold text-sm">{currentUser.name}</p>
-              <p className="text-[10px] text-slate-500 font-mono mt-1 flex items-center gap-1 uppercase">
+            <div className="min-w-0">
+              <p className="text-white font-bold text-sm truncate">{currentUser.name}</p>
+              <p className="text-[10px] text-slate-500 font-mono mt-1 flex items-center gap-1 uppercase truncate">
                 {getRoleIcon(currentUser.role)}
                 {currentUser.role}
               </p>
@@ -928,7 +961,7 @@ export default function App() {
           </div>
         </div>
 
-        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto custom-scrollbar">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentView === item.id;
@@ -980,15 +1013,19 @@ export default function App() {
           </div>
           
           <div className="flex items-center gap-3">
-            <div className="hidden sm:flex items-center gap-2 text-[11px] font-mono text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded border border-emerald-500/20">
+            <div className="hidden md:flex items-center gap-2 text-[11px] font-mono text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded border border-emerald-500/20">
               <Globe size={14} />
               <span dir="ltr">IP: 198.51.100.42 (Arizona, USA) - SECURE</span>
+            </div>
+            <div className="flex flex-col items-end sm:ml-4">
+              <span className="text-[9px] font-mono text-slate-500 uppercase leading-none mb-1">Balance</span>
+              <span className="text-xs sm:text-sm font-mono font-bold text-emerald-400 leading-none" dir="ltr">{formatCurrency(currentUser.balance)}</span>
             </div>
           </div>
         </header>
 
         {/* Main Scrollable Area */}
-        <main className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
+        <main className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 custom-scrollbar">
           <div className="max-w-6xl mx-auto">
             {renderView()}
           </div>
