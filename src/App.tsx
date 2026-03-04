@@ -22,6 +22,8 @@ interface UserAccount {
   role: Role;
   balance: number;
   isUnlimited?: boolean;
+  maxStoredTransfers?: number;
+  storedTransfersCount?: number;
 }
 
 interface Transaction {
@@ -212,6 +214,8 @@ function TransferAnimation({ onComplete }: { onComplete: () => void }) {
   );
 }
 
+const isStoredIban = (iban: string) => Object.values(IBAN_SHORTCUTS).includes(iban);
+
 // --- Helper Functions ---
 const generateId = () => Math.random().toString(36).substr(2, 9).toUpperCase();
 
@@ -352,7 +356,7 @@ export default function App() {
 
   // Forms State
   const [transferData, setTransferData] = useState({ recipientName: '', iban: '', amount: '' });
-  const [newUserData, setNewUserData] = useState({ name: '', username: '', password: '', role: 'employee' as Role, balance: '', isUnlimited: false });
+  const [newUserData, setNewUserData] = useState({ name: '', username: '', password: '', role: 'employee' as Role, balance: '', isUnlimited: false, maxStoredTransfers: '10' });
   
   // Transfer Progress State
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -391,7 +395,9 @@ export default function App() {
           const mappedUsers = usersData.map((u: any) => ({
             ...u,
             balance: (u.role === 'manager' || u.is_unlimited) ? Infinity : u.balance,
-            isUnlimited: u.is_unlimited
+            isUnlimited: u.is_unlimited,
+            maxStoredTransfers: u.max_stored_transfers || 10,
+            storedTransfersCount: u.stored_transfers_count || 0
           }));
           setUsers(mappedUsers);
           
@@ -494,6 +500,16 @@ export default function App() {
       return;
     }
 
+    // Check stored IBAN limit
+    if (currentUser!.role === 'employee' && isStoredIban(transferData.iban)) {
+      const currentCount = currentUser!.storedTransfersCount || 0;
+      const maxLimit = currentUser!.maxStoredTransfers || 0;
+      if (currentCount >= maxLimit) {
+        setNotification({ type: 'error', message: `لقد وصلت للحد الأقصى المسموح به للتحويل للأرقام المخزنة (${maxLimit} تحويلات).` });
+        return;
+      }
+    }
+
     setIsSubmitting(true);
     setShowAnimation(true);
   };
@@ -533,15 +549,27 @@ export default function App() {
         // Update balances
         if (currentUser!.role !== 'manager' && !currentUser!.isUnlimited) {
           const newBalance = currentUser!.balance - amountNum;
+          const isStored = isStoredIban(transferData.iban);
+          const newCount = isStored ? (currentUser!.storedTransfersCount || 0) + 1 : (currentUser!.storedTransfersCount || 0);
+
           const { error: userError } = await supabase
             .from('users')
-            .update({ balance: newBalance })
+            .update({ 
+              balance: newBalance,
+              stored_transfers_count: newCount
+            })
             .eq('id', currentUser!.id);
           
           if (userError) throw userError;
 
-          setUsers(prev => prev.map(u => u.id === currentUser!.id ? { ...u, balance: newBalance } : u));
-          setCurrentUser(prev => prev ? { ...prev, balance: newBalance } : null);
+          setUsers(prev => prev.map(u => u.id === currentUser!.id ? { ...u, balance: newBalance, storedTransfersCount: newCount } : u));
+          setCurrentUser(prev => prev ? { ...prev, balance: newBalance, storedTransfersCount: newCount } : null);
+        } else if (isStoredIban(transferData.iban)) {
+          // Even for unlimited users, we might want to track count if needed, but usually manager is exempt
+          const newCount = (currentUser!.storedTransfersCount || 0) + 1;
+          await supabase.from('users').update({ stored_transfers_count: newCount }).eq('id', currentUser!.id);
+          setUsers(prev => prev.map(u => u.id === currentUser!.id ? { ...u, storedTransfersCount: newCount } : u));
+          setCurrentUser(prev => prev ? { ...prev, storedTransfersCount: newCount } : null);
         }
         
         setTransactions(prev => [newTransaction, ...prev]);
@@ -594,7 +622,9 @@ export default function App() {
       password: newUserData.password,
       role: newUserData.role,
       balance: newUserData.isUnlimited ? Infinity : allocatedBalance,
-      isUnlimited: newUserData.isUnlimited
+      isUnlimited: newUserData.isUnlimited,
+      maxStoredTransfers: parseInt(newUserData.maxStoredTransfers) || 10,
+      storedTransfersCount: 0
     };
 
     const syncUser = async () => {
@@ -609,7 +639,9 @@ export default function App() {
             password: createdUser.password,
             role: createdUser.role,
             balance: newUserData.isUnlimited ? 999999999 : allocatedBalance,
-            is_unlimited: createdUser.isUnlimited
+            is_unlimited: createdUser.isUnlimited,
+            max_stored_transfers: createdUser.maxStoredTransfers,
+            stored_transfers_count: 0
           }]);
         
         if (insertError) throw insertError;
@@ -671,14 +703,20 @@ export default function App() {
     }
   };
 
-  const handleRechargeUser = async (userId: string, amount: number, isUnlimited: boolean) => {
+  const handleRechargeUser = async (userId: string, amount: number, isUnlimited: boolean, maxStored?: number) => {
     try {
+      const updateData: any = { 
+        balance: isUnlimited ? 999999999 : amount,
+        is_unlimited: isUnlimited
+      };
+      if (maxStored !== undefined) {
+        updateData.max_stored_transfers = maxStored;
+        updateData.stored_transfers_count = 0; // Reset count on recharge/update if manager wants
+      }
+
       const { error } = await supabase
         .from('users')
-        .update({ 
-          balance: isUnlimited ? 999999999 : amount,
-          is_unlimited: isUnlimited
-        })
+        .update(updateData)
         .eq('id', userId);
       
       if (error) throw error;
@@ -686,11 +724,13 @@ export default function App() {
       setUsers(prev => prev.map(u => u.id === userId ? { 
         ...u, 
         balance: isUnlimited ? Infinity : amount,
-        isUnlimited: isUnlimited 
+        isUnlimited: isUnlimited,
+        maxStoredTransfers: maxStored !== undefined ? maxStored : u.maxStoredTransfers,
+        storedTransfersCount: maxStored !== undefined ? 0 : u.storedTransfersCount
       } : u));
-      setNotification({ type: 'success', message: 'تم تحديث رصيد المستخدم بنجاح.' });
+      setNotification({ type: 'success', message: 'تم تحديث بيانات المستخدم بنجاح.' });
     } catch (error: any) {
-      setNotification({ type: 'error', message: `فشل الشحن: ${error.message}` });
+      setNotification({ type: 'error', message: `فشل التحديث: ${error.message}` });
     }
   };
 
@@ -985,6 +1025,16 @@ export default function App() {
                       />
                     </div>
                     <div>
+                      <label className="block text-xs font-bold text-slate-400 mb-1.5">حد التحويلات للأرقام المخزنة</label>
+                      <input
+                        type="number"
+                        value={newUserData.maxStoredTransfers}
+                        onChange={(e) => setNewUserData(prev => ({ ...prev, maxStoredTransfers: e.target.value }))}
+                        className="block w-full px-3 py-2.5 border border-[#333] rounded-lg focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm bg-[#141418] text-white transition-colors font-mono"
+                        dir="ltr"
+                      />
+                    </div>
+                    <div>
                       <label className="block text-xs font-bold text-slate-400 mb-1.5">مستوى الصلاحية</label>
                       <select
                         value={newUserData.role}
@@ -1057,6 +1107,7 @@ export default function App() {
                           <th className="px-6 py-4">الهوية</th>
                           <th className="px-6 py-4">المعرف</th>
                           <th className="px-6 py-4">المستوى</th>
+                          <th className="px-6 py-4">التحويلات المخزنة</th>
                           <th className="px-6 py-4">الرصيد (USD)</th>
                           <th className="px-6 py-4">إجراءات</th>
                         </tr>
@@ -1071,6 +1122,19 @@ export default function App() {
                                 {getRoleIcon(u.role)} {u.role.toUpperCase()}
                               </span>
                             </td>
+                            <td className="px-6 py-4">
+                              <div className="flex flex-col">
+                                <span className={`text-xs font-mono font-bold ${u.storedTransfersCount! >= u.maxStoredTransfers! ? 'text-red-400' : 'text-emerald-400'}`}>
+                                  {u.storedTransfersCount} / {u.maxStoredTransfers}
+                                </span>
+                                <div className="w-16 h-1 bg-[#222] rounded-full mt-1 overflow-hidden">
+                                  <div 
+                                    className={`h-full transition-all ${u.storedTransfersCount! >= u.maxStoredTransfers! ? 'bg-red-500' : 'bg-emerald-500'}`}
+                                    style={{ width: `${Math.min(100, (u.storedTransfersCount! / u.maxStoredTransfers!) * 100)}%` }}
+                                  />
+                                </div>
+                              </div>
+                            </td>
                             <td className="px-6 py-4 font-mono font-bold text-white text-sm" dir="ltr">
                               {formatCurrency(u.balance, u.isUnlimited)}
                             </td>
@@ -1078,18 +1142,35 @@ export default function App() {
                               <div className="flex items-center gap-2">
                                 <button 
                                   onClick={() => {
-                                    const amount = prompt('أدخل المبلغ الجديد أو "inf" للرصيد اللانهائي:', u.isUnlimited ? 'inf' : u.balance.toString());
-                                    if (amount !== null) {
-                                      if (amount.toLowerCase() === 'inf') {
-                                        handleRechargeUser(u.id, 999999999, true);
+                                    const amountStr = prompt('أدخل المبلغ الجديد أو "inf" للرصيد اللانهائي:', u.isUnlimited ? 'inf' : u.balance.toString());
+                                    if (amountStr !== null) {
+                                      const limitStr = prompt('أدخل الحد الجديد للتحويلات المخزنة (أو اترك فارغاً لعدم التغيير):', u.maxStoredTransfers?.toString());
+                                      
+                                      let finalBalance = u.balance;
+                                      let finalIsUnlimited = u.isUnlimited;
+                                      let finalMaxStored = u.maxStoredTransfers;
+
+                                      if (amountStr.toLowerCase() === 'inf') {
+                                        finalIsUnlimited = true;
+                                        finalBalance = 999999999;
                                       } else {
-                                        const num = parseFloat(amount);
-                                        if (!isNaN(num)) handleRechargeUser(u.id, num, false);
+                                        const num = parseFloat(amountStr);
+                                        if (!isNaN(num)) {
+                                          finalBalance = num;
+                                          finalIsUnlimited = false;
+                                        }
                                       }
+
+                                      if (limitStr !== null && limitStr !== '') {
+                                        const limitNum = parseInt(limitStr);
+                                        if (!isNaN(limitNum)) finalMaxStored = limitNum;
+                                      }
+
+                                      handleRechargeUser(u.id, finalBalance, !!finalIsUnlimited, finalMaxStored);
                                     }
                                   }}
                                   className="p-2 text-emerald-500 hover:bg-emerald-500/10 rounded-lg transition-colors"
-                                  title="شحن الرصيد"
+                                  title="تعديل البيانات والشحن"
                                 >
                                   <Zap size={16} />
                                 </button>
