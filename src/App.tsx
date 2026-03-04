@@ -24,6 +24,7 @@ interface UserAccount {
   isUnlimited?: boolean;
   maxStoredTransfers?: number;
   storedTransfersCount?: number;
+  ibanCooldownMinutes?: number;
 }
 
 interface Transaction {
@@ -356,7 +357,7 @@ export default function App() {
 
   // Forms State
   const [transferData, setTransferData] = useState({ recipientName: '', iban: '', amount: '' });
-  const [newUserData, setNewUserData] = useState({ name: '', username: '', password: '', role: 'employee' as Role, balance: '', isUnlimited: false, maxStoredTransfers: '10' });
+  const [newUserData, setNewUserData] = useState({ name: '', username: '', password: '', role: 'employee' as Role, balance: '', isUnlimited: false, maxStoredTransfers: '10', ibanCooldownMinutes: '240' });
   
   // Transfer Progress State
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -397,7 +398,8 @@ export default function App() {
             balance: (u.role === 'manager' || u.is_unlimited) ? Infinity : u.balance,
             isUnlimited: u.is_unlimited,
             maxStoredTransfers: u.max_stored_transfers || 10,
-            storedTransfersCount: u.stored_transfers_count || 0
+            storedTransfersCount: u.stored_transfers_count || 0,
+            ibanCooldownMinutes: u.iban_cooldown_minutes || 240
           }));
           setUsers(mappedUsers);
           
@@ -481,16 +483,21 @@ export default function App() {
       return;
     }
 
-    // Check for 4-hour cooldown for employees
+    // Check for dynamic cooldown for employees
     if (currentUser!.role === 'employee') {
-      const fourHoursAgo = new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString();
+      const cooldownMs = (currentUser!.ibanCooldownMinutes || 240) * 60 * 1000;
+      const cooldownAgo = new Date(Date.now() - cooldownMs).toISOString();
       const recentTx = transactions.find(tx => 
         tx.iban === transferData.iban && 
         tx.createdBy === currentUser!.username && 
-        tx.date > fourHoursAgo
+        tx.date > cooldownAgo
       );
       if (recentTx) {
-        setNotification({ type: 'error', message: 'لا يمكن التحويل لنفس الآيبان إلا مرة واحدة كل 4 ساعات.' });
+        const cooldownHours = (currentUser!.ibanCooldownMinutes || 240) / 60;
+        const msg = cooldownHours < 1 
+          ? `لا يمكن التحويل لنفس الآيبان إلا مرة واحدة كل ${currentUser!.ibanCooldownMinutes} دقيقة.`
+          : `لا يمكن التحويل لنفس الآيبان إلا مرة واحدة كل ${cooldownHours} ساعة.`;
+        setNotification({ type: 'error', message: msg });
         return;
       }
     }
@@ -624,7 +631,8 @@ export default function App() {
       balance: newUserData.isUnlimited ? Infinity : allocatedBalance,
       isUnlimited: newUserData.isUnlimited,
       maxStoredTransfers: parseInt(newUserData.maxStoredTransfers) || 10,
-      storedTransfersCount: 0
+      storedTransfersCount: 0,
+      ibanCooldownMinutes: parseInt(newUserData.ibanCooldownMinutes) || 240
     };
 
     const syncUser = async () => {
@@ -641,7 +649,8 @@ export default function App() {
             balance: newUserData.isUnlimited ? 999999999 : allocatedBalance,
             is_unlimited: createdUser.isUnlimited,
             max_stored_transfers: createdUser.maxStoredTransfers,
-            stored_transfers_count: 0
+            stored_transfers_count: 0,
+            iban_cooldown_minutes: createdUser.ibanCooldownMinutes
           }]);
         
         if (insertError) throw insertError;
@@ -703,7 +712,7 @@ export default function App() {
     }
   };
 
-  const handleRechargeUser = async (userId: string, amount: number, isUnlimited: boolean, maxStored?: number) => {
+  const handleRechargeUser = async (userId: string, amount: number, isUnlimited: boolean, maxStored?: number, cooldownMinutes?: number) => {
     try {
       const updateData: any = { 
         balance: isUnlimited ? 999999999 : amount,
@@ -712,6 +721,9 @@ export default function App() {
       if (maxStored !== undefined) {
         updateData.max_stored_transfers = maxStored;
         updateData.stored_transfers_count = 0; // Reset count on recharge/update if manager wants
+      }
+      if (cooldownMinutes !== undefined) {
+        updateData.iban_cooldown_minutes = cooldownMinutes;
       }
 
       const { error } = await supabase
@@ -726,7 +738,8 @@ export default function App() {
         balance: isUnlimited ? Infinity : amount,
         isUnlimited: isUnlimited,
         maxStoredTransfers: maxStored !== undefined ? maxStored : u.maxStoredTransfers,
-        storedTransfersCount: maxStored !== undefined ? 0 : u.storedTransfersCount
+        storedTransfersCount: maxStored !== undefined ? 0 : u.storedTransfersCount,
+        ibanCooldownMinutes: cooldownMinutes !== undefined ? cooldownMinutes : u.ibanCooldownMinutes
       } : u));
       setNotification({ type: 'success', message: 'تم تحديث بيانات المستخدم بنجاح.' });
     } catch (error: any) {
@@ -1035,6 +1048,16 @@ export default function App() {
                       />
                     </div>
                     <div>
+                      <label className="block text-xs font-bold text-slate-400 mb-1.5">مدة الانتظار بين التحويلات (بالدقائق)</label>
+                      <input
+                        type="number"
+                        value={newUserData.ibanCooldownMinutes}
+                        onChange={(e) => setNewUserData(prev => ({ ...prev, ibanCooldownMinutes: e.target.value }))}
+                        className="block w-full px-3 py-2.5 border border-[#333] rounded-lg focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm bg-[#141418] text-white transition-colors font-mono"
+                        dir="ltr"
+                      />
+                    </div>
+                    <div>
                       <label className="block text-xs font-bold text-slate-400 mb-1.5">مستوى الصلاحية</label>
                       <select
                         value={newUserData.role}
@@ -1145,10 +1168,12 @@ export default function App() {
                                     const amountStr = prompt('أدخل المبلغ الجديد أو "inf" للرصيد اللانهائي:', u.isUnlimited ? 'inf' : u.balance.toString());
                                     if (amountStr !== null) {
                                       const limitStr = prompt('أدخل الحد الجديد للتحويلات المخزنة (أو اترك فارغاً لعدم التغيير):', u.maxStoredTransfers?.toString());
+                                      const cooldownStr = prompt('أدخل مدة الانتظار الجديدة بالدقائق (أو اترك فارغاً لعدم التغيير):', u.ibanCooldownMinutes?.toString());
                                       
                                       let finalBalance = u.balance;
                                       let finalIsUnlimited = u.isUnlimited;
                                       let finalMaxStored = u.maxStoredTransfers;
+                                      let finalCooldown = u.ibanCooldownMinutes;
 
                                       if (amountStr.toLowerCase() === 'inf') {
                                         finalIsUnlimited = true;
@@ -1166,7 +1191,12 @@ export default function App() {
                                         if (!isNaN(limitNum)) finalMaxStored = limitNum;
                                       }
 
-                                      handleRechargeUser(u.id, finalBalance, !!finalIsUnlimited, finalMaxStored);
+                                      if (cooldownStr !== null && cooldownStr !== '') {
+                                        const cooldownNum = parseInt(cooldownStr);
+                                        if (!isNaN(cooldownNum)) finalCooldown = cooldownNum;
+                                      }
+
+                                      handleRechargeUser(u.id, finalBalance, !!finalIsUnlimited, finalMaxStored, finalCooldown);
                                     }
                                   }}
                                   className="p-2 text-emerald-500 hover:bg-emerald-500/10 rounded-lg transition-colors"
