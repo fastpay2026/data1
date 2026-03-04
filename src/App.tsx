@@ -3,7 +3,7 @@ import {
   Wallet, Send, History, CheckCircle2, AlertCircle, Clock, ArrowUpRight,
   Building2, User, CreditCard, LogOut, LayoutDashboard, Shield, Briefcase, 
   Calculator, Menu, X, Activity, Lock, Users, Plus, Terminal, ShieldCheck, Globe,
-  Trash2, Zap, Satellite, Landmark
+  Trash2, Zap, Satellite, Landmark, DollarSign
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
@@ -86,17 +86,17 @@ function TransferAnimation({ onComplete }: { onComplete: () => void }) {
   }, [onComplete]);
 
   return (
-    <div className="fixed inset-0 z-[100] bg-[#050505] flex flex-col items-center justify-center overflow-hidden">
-      {/* Background Glow */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_#003366_0%,_transparent_70%)] opacity-30"></div>
+    <div className="fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center overflow-hidden">
+      {/* Background Animated Gradients */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_#e0f2fe_0%,_transparent_50%),radial-gradient(circle_at_bottom_left,_#fef3c7_0%,_transparent_50%)] opacity-40"></div>
       
       <div className="relative w-full max-w-5xl aspect-video flex items-center justify-center p-8">
-        {/* World Map Background (The image provided by user) */}
-        <div className="absolute inset-0 opacity-40 mix-blend-screen">
+        {/* World Map Background - High Quality */}
+        <div className="absolute inset-0 opacity-5">
           <img 
-            src="https://images.unsplash.com/photo-1589519160732-57fc498494f8?q=80&w=2070&auto=format&fit=crop" 
+            src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop" 
             alt="World Map" 
-            className="w-full h-full object-contain filter brightness-50 contrast-125"
+            className="w-full h-full object-cover"
             referrerPolicy="no-referrer"
           />
         </div>
@@ -105,13 +105,14 @@ function TransferAnimation({ onComplete }: { onComplete: () => void }) {
         <svg className="absolute inset-0 w-full h-full z-20" viewBox="0 0 1000 600">
           <defs>
             <filter id="neonGlow" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur stdDeviation="5" result="blur" />
+              <feGaussianBlur stdDeviation="4" result="blur" />
               <feComposite in="SourceGraphic" in2="blur" operator="over" />
             </filter>
-            <filter id="strongGlow" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur stdDeviation="10" result="blur" />
-              <feComposite in="SourceGraphic" in2="blur" operator="over" />
-            </filter>
+            <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#4f46e5" stopOpacity="0" />
+              <stop offset="50%" stopColor="#06b6d4" stopOpacity="1" />
+              <stop offset="100%" stopColor="#4f46e5" stopOpacity="0" />
+            </linearGradient>
           </defs>
 
           {/* Sequential Currency Glow */}
@@ -121,17 +122,19 @@ function TransferAnimation({ onComplete }: { onComplete: () => void }) {
               initial={{ opacity: 0, scale: 0 }}
               animate={{ 
                 opacity: step > (c.delay / 60 * 100) ? 1 : 0,
-                scale: step > (c.delay / 60 * 100) ? [1, 1.2, 1] : 0,
+                scale: step > (c.delay / 60 * 100) ? [1, 1.3, 1] : 0,
               }}
-              transition={{ duration: 1, repeat: Infinity, repeatDelay: 3 }}
+              transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 2 }}
             >
               <text
                 x={c.x}
                 y={c.y}
-                fill="#00f2ff"
-                fontSize="40"
-                fontWeight="bold"
+                fill="#4f46e5"
+                fontSize="48"
+                fontWeight="900"
                 filter="url(#neonGlow)"
+                textAnchor="middle"
+                dominantBaseline="middle"
                 className="font-mono"
               >
                 {c.symbol}
@@ -139,76 +142,91 @@ function TransferAnimation({ onComplete }: { onComplete: () => void }) {
             </motion.g>
           ))}
 
-          {/* Map Contours Lighting Up (Gradual) */}
-          <motion.path
-            d="M150,200 L250,150 L400,180 L550,150 L750,180 L850,250 L800,450 L600,500 L400,480 L200,450 Z" // Simplified world path
-            fill="none"
-            stroke="#00f2ff"
-            strokeWidth="2"
-            filter="url(#strongGlow)"
-            initial={{ pathLength: 0, opacity: 0 }}
-            animate={{ 
-              pathLength: step > 40 ? (step - 40) / 60 : 0,
-              opacity: step > 40 ? 0.8 : 0 
-            }}
-            transition={{ duration: 0.5 }}
-          />
-
-          {/* Connection Lines */}
-          {step > 20 && (
+          {/* Connection Lines - Dynamic */}
+          {step > 10 && (
             <motion.path
-              d="M200,300 Q500,100 800,300"
+              d="M200,300 C350,100 650,500 800,300"
               fill="none"
-              stroke="#0066ff"
-              strokeWidth="1"
+              stroke="url(#lineGradient)"
+              strokeWidth="3"
               strokeDasharray="10,10"
-              initial={{ pathLength: 0 }}
-              animate={{ pathLength: 1 }}
-              transition={{ duration: 30, ease: "linear" }}
+              initial={{ pathLength: 0, opacity: 0 }}
+              animate={{ pathLength: 1, opacity: 1 }}
+              transition={{ duration: 40, ease: "easeInOut" }}
             />
           )}
         </svg>
 
-        {/* Central Status */}
-        <div className="relative z-30 text-center space-y-8">
-          <motion.div
+        {/* Central Status UI */}
+        <div className="relative z-30 flex flex-col items-center">
+          <motion.div 
             animate={{ 
               scale: [1, 1.05, 1],
-              textShadow: ["0 0 10px #00f2ff", "0 0 30px #00f2ff", "0 0 10px #00f2ff"]
+              rotate: [0, 1, -1, 0]
             }}
-            transition={{ duration: 2, repeat: Infinity }}
-            className="text-4xl font-black text-white tracking-widest uppercase"
+            transition={{ duration: 4, repeat: Infinity }}
+            className="w-48 h-48 bg-white rounded-[3rem] shadow-2xl shadow-indigo-200 flex items-center justify-center border border-indigo-50 mb-10 relative"
           >
-            جاري المزامنة العالمية
-          </motion.div>
-          
-          <div className="flex flex-col items-center gap-4">
-            <div className="w-96 h-1.5 bg-[#111] rounded-full overflow-hidden border border-[#222] relative">
-              <motion.div 
-                className="absolute inset-y-0 left-0 bg-gradient-to-r from-[#0066ff] to-[#00f2ff] shadow-[0_0_15px_#00f2ff]"
-                style={{ width: `${step}%` }}
+            <div className="absolute inset-0 bg-indigo-600 rounded-[3rem] opacity-5 animate-pulse"></div>
+            <Globe className="text-indigo-600" size={80} />
+            
+            {/* Progress Ring */}
+            <svg className="absolute inset-0 w-full h-full -rotate-90">
+              <circle
+                cx="96"
+                cy="96"
+                r="88"
+                fill="none"
+                stroke="#f1f5f9"
+                strokeWidth="8"
               />
+              <motion.circle
+                cx="96"
+                cy="96"
+                r="88"
+                fill="none"
+                stroke="#4f46e5"
+                strokeWidth="8"
+                strokeDasharray="552.92"
+                animate={{ strokeDashoffset: 552.92 * (1 - step / 100) }}
+                transition={{ duration: 0.5 }}
+                strokeLinecap="round"
+              />
+            </svg>
+          </motion.div>
+
+          <div className="text-center space-y-4">
+            <h2 className="text-4xl font-black text-slate-900 tracking-tighter">جاري تشفير ومعالجة الحوالة</h2>
+            <div className="flex items-center justify-center gap-3">
+              <div className="flex gap-1">
+                {[0, 1, 2].map(i => (
+                  <motion.div
+                    key={i}
+                    animate={{ opacity: [0.3, 1, 0.3] }}
+                    transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
+                    className="w-2 h-2 bg-indigo-600 rounded-full"
+                  />
+                ))}
+              </div>
+              <span className="text-indigo-600 font-mono font-black text-xl">{step}%</span>
             </div>
-            <div className="text-emerald-500 font-mono text-xl">
-              {step}% <span className="text-slate-500 ml-2">| SECURE_CHANNEL_ACTIVE</span>
-            </div>
+            <p className="text-slate-400 font-bold text-sm uppercase tracking-[0.3em]">Secure Quantum Tunnel Established</p>
           </div>
         </div>
       </div>
 
-      {/* Bottom Info */}
-      <div className="absolute bottom-12 w-full max-w-4xl px-8 grid grid-cols-3 gap-8 text-[10px] font-mono text-slate-500 uppercase tracking-widest">
-        <div className="space-y-2 border-l border-[#222] pl-4">
-          <p className="text-white">Protocol: AES-XTS-512</p>
-          <p>Status: Encrypting Payload</p>
+      {/* Bottom Info Bar */}
+      <div className="absolute bottom-12 left-0 right-0 px-12 flex justify-between items-end">
+        <div className="space-y-1">
+          <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Origin Node</p>
+          <p className="text-sm font-bold text-slate-600">AES-256-GCM / TLS 1.3</p>
         </div>
-        <div className="space-y-2 border-l border-[#222] pl-4">
-          <p className="text-white">Relay: Satellite-V4</p>
-          <p>Location: Global Grid</p>
-        </div>
-        <div className="space-y-2">
-          <p className="text-white">Time: {Math.max(0, 60 - Math.floor(step * 0.6))}s Remaining</p>
-          <p>Verification: Pending</p>
+        <div className="text-right space-y-1">
+          <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Network Status</p>
+          <p className="text-sm font-bold text-emerald-500 flex items-center gap-2 justify-end">
+            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+            OPTIMIZED
+          </p>
         </div>
       </div>
     </div>
@@ -271,76 +289,89 @@ function LoginScreen({ onLoginAttempt }: { onLoginAttempt: (u: string, p: string
   };
 
   return (
-    <div dir="rtl" className="min-h-screen bg-[#050505] flex items-center justify-center p-4 font-sans text-slate-300">
-      <div className="bg-[#0f0f11] rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-[#222]">
-        <div className="p-8 text-center border-b border-[#222] relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-1 bg-emerald-500"></div>
-          <div className="w-16 h-16 bg-[#1a1a1f] border border-[#333] rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-inner">
-            <ShieldCheck size={32} className="text-emerald-500" />
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 sm:p-6">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_#e0f2fe_0%,_transparent_40%),radial-gradient(circle_at_bottom_left,_#fef3c7_0%,_transparent_40%)] opacity-60"></div>
+      
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-md relative z-10"
+      >
+        <div className="bg-white rounded-3xl shadow-2xl shadow-indigo-200/50 border border-white p-8 sm:p-10">
+          <div className="flex flex-col items-center mb-10">
+            <div className="w-20 h-20 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-xl shadow-indigo-200 mb-6 rotate-3">
+              <ShieldCheck className="text-white" size={40} />
+            </div>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight mb-2">بوابة التحويل الآمن</h1>
+            <p className="text-slate-500 text-sm font-medium">نظام التشفير المتقدم v4.0</p>
           </div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">بوابة العبور الآمنة</h1>
-          <p className="text-slate-500 mt-2 text-sm font-mono tracking-widest uppercase">SECURE SYSTEM LOGIN</p>
-        </div>
-        
-        <div className="p-8">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {error && (
-              <div className="p-4 rounded-lg bg-red-500/10 text-red-400 border border-red-500/20 flex items-start gap-3">
-                <AlertCircle className="shrink-0 mt-0.5" size={18} />
-                <p className="text-sm font-medium">{error}</p>
-              </div>
-            )}
 
-            <div>
-              <label htmlFor="username" className="block text-sm font-bold text-slate-400 mb-2">
-                معرف المستخدم
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-600">
-                  <Terminal size={18} />
+          {error && (
+            <motion.div 
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="mb-6 p-4 bg-red-50 border border-red-100 rounded-xl flex items-center gap-3 text-red-600 text-sm font-bold"
+            >
+              <AlertCircle size={18} />
+              {error}
+            </motion.div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <label className="text-xs font-black text-slate-400 uppercase tracking-widest mr-1">اسم المستخدم</label>
+              <div className="relative group">
+                <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-indigo-600 transition-colors">
+                  <User size={20} />
                 </div>
                 <input
                   type="text"
-                  id="username"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="block w-full pr-10 pl-3 py-3 border border-[#333] rounded-lg focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm bg-[#141418] text-white transition-colors font-mono"
-                  placeholder="admin"
-                  dir="ltr"
+                  className="block w-full pr-12 pl-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:bg-white transition-all text-slate-900 font-bold placeholder:text-slate-300"
+                  placeholder="أدخل اسم المستخدم"
+                  required
                 />
               </div>
             </div>
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-bold text-slate-400 mb-2">
-                مفتاح التشفير (كلمة المرور)
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-600">
-                  <Lock size={18} />
+            <div className="space-y-2">
+              <label className="text-xs font-black text-slate-400 uppercase tracking-widest mr-1">كلمة المرور</label>
+              <div className="relative group">
+                <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-indigo-600 transition-colors">
+                  <Lock size={20} />
                 </div>
                 <input
                   type="password"
-                  id="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full pr-10 pl-3 py-3 border border-[#333] rounded-lg focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm bg-[#141418] text-white transition-colors font-mono"
+                  className="block w-full pr-12 pl-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:bg-white transition-all text-slate-900 font-bold placeholder:text-slate-300"
                   placeholder="••••••••"
-                  dir="ltr"
+                  required
                 />
               </div>
             </div>
 
             <button
               type="submit"
-              className="w-full flex justify-center items-center gap-2 py-3.5 px-4 border border-emerald-500/50 rounded-lg shadow-lg text-sm font-bold text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500 hover:text-[#050505] focus:outline-none transition-all active:scale-[0.98]"
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-4 rounded-2xl shadow-lg shadow-indigo-200 transition-all active:scale-[0.98] flex items-center justify-center gap-3 text-lg"
             >
-              <Lock size={18} />
-              توثيق الدخول
+              تسجيل الدخول الآمن
+              <ArrowUpRight size={22} />
             </button>
           </form>
+
+          <div className="mt-10 pt-8 border-t border-slate-50 flex items-center justify-center gap-6 text-slate-300">
+            <Globe size={20} />
+            <Satellite size={20} />
+            <Shield size={20} />
+          </div>
         </div>
-      </div>
+        
+        <p className="text-center mt-8 text-slate-400 text-xs font-mono uppercase tracking-[0.2em]">
+          End-to-End Encrypted Session
+        </p>
+      </motion.div>
     </div>
   );
 }
@@ -763,90 +794,130 @@ export default function App() {
     switch (currentView) {
       case 'overview':
         return (
-          <div className="space-y-6 animate-in fade-in duration-300">
-            <h2 className="text-2xl font-bold text-white">مرحباً، {currentUser.name}</h2>
+          <div className="space-y-10 animate-in fade-in duration-700">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+              <div>
+                <h2 className="text-4xl font-black text-slate-900 tracking-tight">مرحباً، {currentUser.name}</h2>
+                <p className="text-slate-500 font-medium mt-2 text-lg">إليك ملخص نشاطك المالي المشفر لليوم</p>
+              </div>
+              <div className="flex items-center gap-4 bg-white p-3 rounded-2xl shadow-sm border border-slate-100">
+                <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
+                  <Clock size={24} />
+                </div>
+                <div className="text-left">
+                  <p className="technical-label leading-none mb-1">Session Active</p>
+                  <p className="text-sm font-bold text-slate-700">Online Now</p>
+                </div>
+              </div>
+            </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Balance Card */}
-              <div className="bg-[#111] border border-[#333] rounded-xl p-6 relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500"></div>
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+              {/* Main Balance Card */}
+              <div className="md:col-span-8 bento-card p-10 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-600/5 rounded-full -mr-32 -mt-32 transition-transform group-hover:scale-110 duration-700"></div>
                 <div className="relative z-10">
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-slate-400 font-medium flex items-center gap-2 text-sm">
-                      <Wallet size={18} />
-                      الرصيد المتاح للتحويل
-                    </h2>
+                  <div className="flex items-center justify-between mb-10">
+                    <div className="p-4 bg-indigo-600 rounded-2xl text-white shadow-2xl shadow-indigo-200">
+                      <Wallet size={32} />
+                    </div>
+                    <div className="text-right">
+                      <span className="technical-label">Vault Balance</span>
+                      <div className="flex items-center gap-2 text-xs font-bold text-emerald-600 bg-emerald-50 px-4 py-1.5 rounded-full mt-2">
+                        <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                        SECURE_NODE_01
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-3xl font-mono font-bold text-white tracking-tight" dir="ltr">
+                  <div className="text-6xl font-mono font-black text-slate-900 tracking-tighter mb-4" dir="ltr">
                     {formatCurrency(currentUser.balance, currentUser.isUnlimited)}
                   </div>
-                  <div className="mt-4 pt-4 border-t border-[#222] flex items-center justify-between text-xs text-slate-500 font-mono">
-                    <span>STATUS: ACTIVE</span>
-                    <span>CURRENCY: USD</span>
-                  </div>
+                  <p className="text-slate-400 font-medium">إجمالي الرصيد المتاح للتحويل الفوري</p>
                 </div>
               </div>
               
-              {/* Stats Card 1 */}
-              <div className="bg-[#111] border border-[#333] rounded-xl p-6 flex flex-col justify-center">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="p-2 bg-blue-500/10 text-blue-400 rounded-lg border border-blue-500/20"><Activity size={18} /></div>
-                  <h3 className="text-sm font-bold text-slate-400">إجمالي التحويلات الصادرة</h3>
+              {/* Side Stats */}
+              <div className="md:col-span-4 flex flex-col gap-6">
+                <div className="flex-1 bento-card p-8 flex flex-col justify-between">
+                  <div className="flex items-center justify-between">
+                    <div className="p-3 bg-blue-50 text-blue-600 rounded-xl border border-blue-100">
+                      <Activity size={24} />
+                    </div>
+                    <span className="technical-label">Volume</span>
+                  </div>
+                  <div>
+                    <p className="text-3xl font-mono font-black text-slate-900 tracking-tight" dir="ltr">{formatCurrency(totalTransferred)}</p>
+                    <p className="text-xs font-bold text-slate-400 mt-2">إجمالي حجم التداول</p>
+                  </div>
                 </div>
-                <p className="text-2xl font-mono font-bold text-white" dir="ltr">{formatCurrency(totalTransferred)}</p>
-              </div>
-
-              {/* Stats Card 2 */}
-              <div className="bg-[#111] border border-[#333] rounded-xl p-6 flex flex-col justify-center">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="p-2 bg-purple-500/10 text-purple-400 rounded-lg border border-purple-500/20"><History size={18} /></div>
-                  <h3 className="text-sm font-bold text-slate-400">العمليات المنجزة</h3>
+                
+                <div className="flex-1 bento-card p-8 flex flex-col justify-between">
+                  <div className="flex items-center justify-between">
+                    <div className="p-3 bg-amber-50 text-amber-600 rounded-xl border border-amber-100">
+                      <History size={24} />
+                    </div>
+                    <span className="technical-label">Operations</span>
+                  </div>
+                  <div>
+                    <p className="text-3xl font-mono font-black text-slate-900 tracking-tight">{totalTransactions}</p>
+                    <p className="text-xs font-bold text-slate-400 mt-2">عملية تحويل مكتملة</p>
+                  </div>
                 </div>
-                <p className="text-2xl font-mono font-bold text-white">{totalTransactions} <span className="text-sm text-slate-500">عملية</span></p>
               </div>
             </div>
 
-            {/* Recent Transactions */}
-            <div className="bg-[#111] border border-[#333] rounded-xl overflow-hidden mt-8">
-              <div className="p-5 border-b border-[#222] flex items-center justify-between bg-[#141418]">
-                <h3 className="text-base font-bold text-white flex items-center gap-2">
-                  <Terminal size={18} className="text-emerald-500" />
+            {/* Recent Transactions Section */}
+            <div className="bento-card overflow-hidden">
+              <div className="p-8 border-b border-slate-50 flex items-center justify-between bg-slate-50/30">
+                <h3 className="text-xl font-black text-slate-900 flex items-center gap-4">
+                  <div className="w-10 h-10 bg-white rounded-xl shadow-sm border border-slate-100 flex items-center justify-center text-indigo-600">
+                    <Terminal size={20} />
+                  </div>
                   أحدث العمليات المشفرة
                 </h3>
-                <button onClick={() => setCurrentView('history')} className="text-xs text-emerald-500 font-mono hover:text-emerald-400">VIEW_ALL</button>
+                <button 
+                  onClick={() => setCurrentView('history')} 
+                  className="text-xs font-black text-indigo-600 hover:bg-indigo-50 px-6 py-3 rounded-xl transition-all border border-indigo-100"
+                >
+                  عرض السجل الكامل
+                </button>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-right">
-                  <thead className="bg-[#0a0a0a] text-slate-500 text-xs uppercase font-mono border-b border-[#222]">
-                    <tr>
-                      <th className="px-6 py-4">المستفيد</th>
-                      <th className="px-6 py-4">المبلغ</th>
-                      <th className="px-6 py-4">التاريخ</th>
-                      <th className="px-6 py-4">الحالة</th>
+                  <thead>
+                    <tr className="bg-slate-50/50 text-slate-400 text-[10px] font-black uppercase tracking-widest border-b border-slate-100">
+                      <th className="px-10 py-5">المستفيد</th>
+                      <th className="px-10 py-5">المبلغ</th>
+                      <th className="px-10 py-5">التاريخ</th>
+                      <th className="px-10 py-5">الحالة</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#222]">
+                  <tbody className="divide-y divide-slate-50">
                     {recentTransactions.length === 0 ? (
                       <tr>
-                        <td colSpan={4} className="px-6 py-8 text-center text-slate-600 font-mono text-sm">NO_TRANSACTIONS_FOUND</td>
+                        <td colSpan={4} className="px-10 py-20 text-center text-slate-400 font-bold italic">لا توجد عمليات حديثة في الشبكة</td>
                       </tr>
-                    ) : recentTransactions.map(tx => (
-                      <tr key={tx.id} className="hover:bg-[#16161a] transition-colors">
-                        <td className="px-6 py-4">
-                          <p className="text-sm font-bold text-slate-200">{tx.recipientName}</p>
-                          <p className="text-xs text-slate-500 font-mono mt-1" dir="ltr">{tx.iban}</p>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className="text-sm font-mono font-bold text-white" dir="ltr">{formatCurrency(tx.amount)}</span>
-                        </td>
-                        <td className="px-6 py-4 text-xs font-mono text-slate-500" dir="ltr">{formatDate(tx.date)}</td>
-                        <td className="px-6 py-4">
-                          <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                            <CheckCircle2 size={12} /> SECURE_OK
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
+                    ) : (
+                      recentTransactions.map(tx => (
+                        <tr key={tx.id} className="hover:bg-slate-50/50 transition-colors group">
+                          <td className="px-10 py-6">
+                            <p className="font-black text-slate-900 group-hover:text-indigo-600 transition-colors">{tx.recipientName}</p>
+                            <p className="text-[10px] font-mono font-bold text-slate-400 mt-1" dir="ltr">{tx.iban}</p>
+                          </td>
+                          <td className="px-10 py-6 font-mono font-black text-slate-900" dir="ltr">
+                            {formatCurrency(tx.amount)}
+                          </td>
+                          <td className="px-10 py-6">
+                            <p className="text-xs font-bold text-slate-600">{formatDate(tx.date)}</p>
+                          </td>
+                          <td className="px-10 py-6">
+                            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-[10px] font-black bg-emerald-50 text-emerald-600 border border-emerald-100 uppercase tracking-widest">
+                              <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
+                              Verified
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -856,125 +927,167 @@ export default function App() {
 
       case 'transfer':
         return (
-          <div className="max-w-2xl mx-auto animate-in fade-in duration-300">
-            <div className="bg-[#111] border border-[#333] rounded-xl p-6 sm:p-8 relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-full h-1 bg-blue-500"></div>
+          <div className="max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-8 duration-700">
+            <div className="bento-card p-10 sm:p-16 relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-2.5 bg-indigo-600"></div>
               
-              <div className="flex items-center justify-between mb-8">
-                <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                  <Send size={20} className="text-blue-500" />
-                  تحويل آمن ومشفّر
-                </h2>
-                <div className="text-xs font-mono font-bold text-slate-400 bg-[#0a0a0a] px-3 py-2 rounded border border-[#333]">
-                  الرصيد: <span className="text-white" dir="ltr">{formatCurrency(currentUser.balance, currentUser.isUnlimited)}</span>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-10 mb-16">
+                <div className="flex items-center gap-6">
+                  <div className="w-20 h-20 bg-indigo-50 rounded-[2rem] flex items-center justify-center text-indigo-600 shadow-inner border border-indigo-100/50">
+                    <Send size={36} />
+                  </div>
+                  <div>
+                    <h2 className="text-3xl font-black text-slate-900 tracking-tight">تحويل آمن ومشفّر</h2>
+                    <p className="text-slate-500 font-medium mt-1 text-lg">نظام التحويل الفوري العالمي v4.0</p>
+                  </div>
+                </div>
+                <div className="bg-slate-50/80 backdrop-blur-sm px-8 py-6 rounded-[2rem] border border-slate-100 text-center shadow-sm">
+                  <p className="technical-label mb-2">Available Vault Funds</p>
+                  <p className="text-3xl font-mono font-black text-indigo-600 tracking-tighter" dir="ltr">
+                    {formatCurrency(currentUser.balance, currentUser.isUnlimited)}
+                  </p>
                 </div>
               </div>
 
               {notification && (
-                <div className={`p-4 rounded-lg mb-6 flex items-start gap-3 border ${
-                  notification.type === 'success' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'
-                }`}>
-                  {notification.type === 'success' ? <CheckCircle2 className="shrink-0 mt-0.5" size={18} /> : <AlertCircle className="shrink-0 mt-0.5" size={18} />}
-                  <p className="text-sm font-medium">{notification.message}</p>
-                </div>
+                <motion.div 
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={`p-8 rounded-[2rem] mb-12 flex items-start gap-6 border-2 ${
+                    notification.type === 'success' 
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-100' 
+                      : 'bg-red-50 text-red-700 border-red-100'
+                  }`}
+                >
+                  <div className={`p-3 rounded-2xl ${notification.type === 'success' ? 'bg-emerald-100 shadow-lg shadow-emerald-100' : 'bg-red-100 shadow-lg shadow-red-100'}`}>
+                    {notification.type === 'success' ? <CheckCircle2 size={24} /> : <AlertCircle size={24} />}
+                  </div>
+                  <div>
+                    <p className="text-lg font-black leading-tight mb-1">
+                      {notification.type === 'success' ? 'تمت العملية بنجاح' : 'خطأ في النظام'}
+                    </p>
+                    <p className="text-sm font-bold opacity-80 leading-relaxed">{notification.message}</p>
+                  </div>
+                </motion.div>
               )}
 
               {isSubmitting ? (
-                <div className="py-8 space-y-6">
-                  <div className="flex items-center justify-between text-sm font-mono">
-                    <span className="text-emerald-400 animate-pulse">{transferMessage}</span>
-                    <span className="text-slate-500">{Math.round(transferProgress)}%</span>
+                <div className="py-12 space-y-10">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-4 h-4 bg-indigo-600 rounded-full animate-ping"></div>
+                      <span className="text-indigo-600 font-black text-2xl">{transferMessage}</span>
+                    </div>
+                    <span className="text-slate-400 font-mono font-black text-xl">{Math.round(transferProgress)}%</span>
                   </div>
-                  <div className="w-full bg-[#0a0a0a] rounded-full h-3 border border-[#333] overflow-hidden">
-                    <div 
-                      className="bg-emerald-500 h-full transition-all duration-100 ease-linear relative"
+                  <div className="w-full bg-slate-100 rounded-full h-6 overflow-hidden border border-slate-200 p-1.5">
+                    <motion.div 
+                      className="bg-indigo-600 h-full rounded-full shadow-lg shadow-indigo-200 relative"
                       style={{ width: `${transferProgress}%` }}
                     >
-                      <div className="absolute inset-0 bg-white/20 animate-[shimmer_1s_infinite] w-full"></div>
-                    </div>
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-[shimmer_1.5s_infinite]"></div>
+                    </motion.div>
                   </div>
-                  <div className="bg-[#0a0a0a] p-4 rounded border border-[#222] font-mono text-xs text-slate-500 space-y-2">
-                    <p>{'>'} INITIALIZING SECURE PROTOCOL...</p>
-                    <p>{'>'} BYPASSING REGIONAL RESTRICTIONS...</p>
-                    {transferProgress > 30 && <p className="text-emerald-500/50">{'>'} CONNECTION ANONYMIZED.</p>}
-                    {transferProgress > 60 && <p className="text-emerald-500/50">{'>'} PAYLOAD ENCRYPTED.</p>}
-                    {transferProgress > 90 && <p className="text-emerald-500/50">{'>'} EXECUTING TRANSFER...</p>}
+                  <div className="bg-slate-50 p-8 rounded-[2rem] border border-slate-100 font-mono text-sm text-slate-500 space-y-4 shadow-inner">
+                    <p className="flex items-center gap-3"><span className="text-indigo-400">●</span> INITIALIZING SECURE PROTOCOL...</p>
+                    <p className="flex items-center gap-3"><span className="text-indigo-400">●</span> BYPASSING REGIONAL RESTRICTIONS...</p>
+                    {transferProgress > 30 && <p className="flex items-center gap-3 text-indigo-600/70 font-bold"><span className="text-indigo-600">●</span> CONNECTION ANONYMIZED.</p>}
+                    {transferProgress > 60 && <p className="flex items-center gap-3 text-indigo-600/70 font-bold"><span className="text-indigo-600">●</span> PAYLOAD ENCRYPTED.</p>}
+                    {transferProgress > 90 && <p className="flex items-center gap-3 text-indigo-600/70 font-bold"><span className="text-indigo-600">●</span> EXECUTING TRANSFER...</p>}
                   </div>
                 </div>
               ) : (
-                <form onSubmit={handleTransferSubmit} className="space-y-5">
-                  <div>
-                    <label htmlFor="recipientName" className="block text-sm font-bold text-slate-400 mb-2">اسم المستفيد</label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-600">
-                        <User size={18} />
+                <form onSubmit={handleTransferSubmit} className="space-y-10">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-3">
+                      <label className="technical-label mr-2">اسم المستفيد</label>
+                      <div className="relative group">
+                        <div className="absolute inset-y-0 right-0 pr-5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-indigo-600 transition-colors">
+                          <User size={22} />
+                        </div>
+                        <input
+                          type="text"
+                          required
+                          value={transferData.recipientName}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setTransferData(prev => {
+                              const newData = { ...prev, recipientName: val };
+                              if (IBAN_SHORTCUTS[val]) {
+                                newData.iban = IBAN_SHORTCUTS[val];
+                              }
+                              return newData;
+                            });
+                          }}
+                          className="block w-full pr-14 pl-5 py-5 bg-slate-50 border border-slate-100 rounded-[1.5rem] focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:bg-white transition-all text-slate-900 font-bold text-lg placeholder:text-slate-300"
+                          placeholder="الاسم الكامل للمستفيد"
+                        />
                       </div>
-                      <input
-                        type="text"
-                        id="recipientName"
-                        value={transferData.recipientName}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setTransferData(prev => {
-                            const newData = { ...prev, recipientName: val };
-                            if (IBAN_SHORTCUTS[val]) {
-                              newData.iban = IBAN_SHORTCUTS[val];
-                            }
-                            return newData;
-                          });
-                        }}
-                        className="block w-full pr-10 pl-3 py-3 border border-[#333] rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-[#141418] text-white transition-colors"
-                        placeholder="الاسم الكامل"
-                      />
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <label className="technical-label mr-2">رقم الآيبان (IBAN)</label>
+                      <div className="relative group">
+                        <div className="absolute inset-y-0 right-0 pr-5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-indigo-600 transition-colors">
+                          <CreditCard size={22} />
+                        </div>
+                        <input
+                          type="text"
+                          required
+                          value={transferData.iban}
+                          onChange={(e) => setTransferData(prev => ({ ...prev, iban: e.target.value.toUpperCase().replace(/\s/g, '') }))}
+                          className="block w-full pr-14 pl-5 py-5 bg-slate-50 border border-slate-100 rounded-[1.5rem] focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:bg-white transition-all text-slate-900 font-black font-mono text-lg placeholder:text-slate-300"
+                          placeholder="SA00 0000 0000..."
+                          dir="ltr"
+                        />
+                      </div>
                     </div>
                   </div>
 
-                  <div>
-                    <label htmlFor="iban" className="block text-sm font-bold text-slate-400 mb-2">رقم الآيبان (IBAN)</label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-600">
-                        <CreditCard size={18} />
+                  <div className="space-y-3">
+                    <label className="technical-label mr-2">مبلغ التحويل (USD)</label>
+                    <div className="relative group">
+                      <div className="absolute inset-y-0 right-0 pr-6 flex items-center pointer-events-none text-slate-400 group-focus-within:text-indigo-600 transition-colors">
+                        <DollarSign size={32} />
                       </div>
-                      <input
-                        type="text"
-                        id="iban"
-                        value={transferData.iban}
-                        onChange={(e) => setTransferData(prev => ({ ...prev, iban: e.target.value.toUpperCase().replace(/\s/g, '') }))}
-                        dir="ltr"
-                        className="block w-full pr-10 pl-3 py-3 border border-[#333] rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-[#141418] text-white transition-colors text-left font-mono"
-                        placeholder="SA0000000000000000000000"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label htmlFor="amount" className="block text-sm font-bold text-slate-400 mb-2">المبلغ بالدولار</label>
-                    <div className="relative">
                       <input
                         type="number"
-                        id="amount"
-                        value={transferData.amount}
-                        onChange={(e) => setTransferData(prev => ({ ...prev, amount: e.target.value }))}
+                        required
                         min="1"
                         step="0.01"
-                        dir="ltr"
-                        className="block w-full pr-3 pl-16 py-3 border border-[#333] rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-[#141418] text-white transition-colors text-left font-mono text-lg"
+                        value={transferData.amount}
+                        onChange={(e) => setTransferData(prev => ({ ...prev, amount: e.target.value }))}
+                        className="block w-full pr-16 pl-6 py-8 bg-slate-50 border border-slate-100 rounded-[2rem] focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:bg-white transition-all text-slate-900 font-black font-mono text-5xl placeholder:text-slate-200"
                         placeholder="0.00"
+                        dir="ltr"
                       />
-                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none border-r border-[#333] pr-3 my-2">
-                        <span className="text-slate-500 font-mono font-bold">USD</span>
-                      </div>
+                    </div>
+                    <div className="flex justify-between px-4">
+                      <p className="text-xs font-bold text-slate-400">الحد الأدنى للتحويل: $1.00</p>
+                      <p className="text-xs font-bold text-slate-400">رسوم التحويل: $0.00 (مغطاة)</p>
                     </div>
                   </div>
 
                   <div className="pt-6">
                     <button
                       type="submit"
-                      className="w-full flex justify-center items-center gap-2 py-4 px-4 border border-blue-500/50 rounded-lg shadow-lg text-sm font-bold text-blue-400 bg-blue-500/10 hover:bg-blue-500 hover:text-[#050505] focus:outline-none transition-all active:scale-[0.98]"
+                      disabled={isSubmitting}
+                      className="w-full flex justify-center items-center gap-4 py-6 px-10 bg-indigo-600 hover:bg-indigo-700 text-white rounded-[2rem] shadow-2xl shadow-indigo-200 transition-all active:scale-[0.98] disabled:opacity-50 disabled:grayscale font-black text-2xl group"
                     >
-                      تأكيد وإرسال الحوالة
-                      <ArrowUpRight size={18} />
+                      {isSubmitting ? (
+                        <div className="w-8 h-8 border-4 border-white/30 border-t-white rounded-full animate-spin" />
+                      ) : (
+                        <>
+                          تأكيد وإرسال الحوالة الآن
+                          <ArrowUpRight size={32} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                        </>
+                      )}
                     </button>
+                    <div className="flex items-center justify-center gap-4 mt-8 opacity-40 grayscale">
+                      <Shield size={16} />
+                      <p className="technical-label">AES-256 Encrypted • Quantum Secure • ISO 20022</p>
+                      <Globe size={16} />
+                    </div>
                   </div>
                 </form>
               )}
@@ -984,185 +1097,204 @@ export default function App() {
 
       case 'users':
         return (
-          <div className="space-y-6 animate-in fade-in duration-300">
+          <div className="space-y-10 animate-in fade-in duration-700">
             <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-white">إدارة الصلاحيات والمستخدمين</h2>
+              <div>
+                <h2 className="text-4xl font-black text-slate-900 tracking-tight">إدارة الصلاحيات</h2>
+                <p className="text-slate-500 font-medium mt-2 text-lg">التحكم في وصول الموظفين وتخصيص الأرصدة المشفرة</p>
+              </div>
             </div>
             
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
               {/* Add User Form */}
-              <div className="lg:col-span-1">
-                <div className="bg-[#111] border border-[#333] rounded-xl p-6 sticky top-6">
-                  <h3 className="text-base font-bold text-white mb-6 flex items-center gap-2">
-                    <Plus size={18} className="text-emerald-500" />
+              <div className="lg:col-span-4">
+                <div className="bento-card p-10 sticky top-10">
+                  <h3 className="text-xl font-black text-slate-900 mb-10 flex items-center gap-4">
+                    <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100 shadow-sm">
+                      <Plus size={24} />
+                    </div>
                     إصدار تصريح جديد
                   </h3>
 
                   {notification && (
-                    <div className={`p-3 rounded-lg mb-6 flex items-start gap-2 border text-xs ${
-                      notification.type === 'success' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'
-                    }`}>
-                      {notification.type === 'success' ? <CheckCircle2 className="shrink-0" size={14} /> : <AlertCircle className="shrink-0" size={14} />}
-                      <p className="font-medium">{notification.message}</p>
-                    </div>
+                    <motion.div 
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className={`p-6 rounded-2xl mb-10 flex items-start gap-4 border-2 text-sm ${
+                        notification.type === 'success' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-red-50 text-red-700 border-red-100'
+                      }`}
+                    >
+                      {notification.type === 'success' ? <CheckCircle2 className="shrink-0" size={20} /> : <AlertCircle className="shrink-0" size={20} />}
+                      <p className="font-bold leading-relaxed">{notification.message}</p>
+                    </motion.div>
                   )}
 
-                  <form onSubmit={handleAddUser} className="space-y-4">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-400 mb-1.5">الاسم الكامل</label>
+                  <form onSubmit={handleAddUser} className="space-y-8">
+                    <div className="space-y-3">
+                      <label className="technical-label mr-2">الاسم الكامل</label>
                       <input
                         type="text"
+                        required
                         value={newUserData.name}
                         onChange={(e) => setNewUserData(prev => ({ ...prev, name: e.target.value }))}
-                        className="block w-full px-3 py-2.5 border border-[#333] rounded-lg focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm bg-[#141418] text-white transition-colors"
+                        className="block w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:bg-white transition-all text-slate-900 font-bold placeholder:text-slate-300"
+                        placeholder="أدخل الاسم الثلاثي"
                       />
                     </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-400 mb-1.5">معرف المستخدم</label>
+                    <div className="space-y-3">
+                      <label className="technical-label mr-2">معرف المستخدم</label>
                       <input
                         type="text"
+                        required
                         value={newUserData.username}
                         onChange={(e) => setNewUserData(prev => ({ ...prev, username: e.target.value }))}
-                        className="block w-full px-3 py-2.5 border border-[#333] rounded-lg focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm bg-[#141418] text-white transition-colors font-mono"
+                        className="block w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:bg-white transition-all text-slate-900 font-bold font-mono placeholder:text-slate-300"
                         dir="ltr"
+                        placeholder="username"
                       />
                     </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-400 mb-1.5">مفتاح التشفير</label>
+                    <div className="space-y-3">
+                      <label className="technical-label mr-2">مفتاح التشفير (كلمة المرور)</label>
                       <input
                         type="text"
+                        required
                         value={newUserData.password}
                         onChange={(e) => setNewUserData(prev => ({ ...prev, password: e.target.value }))}
-                        className="block w-full px-3 py-2.5 border border-[#333] rounded-lg focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm bg-[#141418] text-white transition-colors font-mono"
+                        className="block w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:bg-white transition-all text-slate-900 font-bold font-mono placeholder:text-slate-300"
                         dir="ltr"
+                        placeholder="••••••••"
                       />
                     </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-400 mb-1.5">حد التحويلات للأرقام المخزنة</label>
-                      <input
-                        type="number"
-                        value={newUserData.maxStoredTransfers}
-                        onChange={(e) => setNewUserData(prev => ({ ...prev, maxStoredTransfers: e.target.value }))}
-                        className="block w-full px-3 py-2.5 border border-[#333] rounded-lg focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm bg-[#141418] text-white transition-colors font-mono"
-                        dir="ltr"
-                      />
+                    <div className="grid grid-cols-2 gap-6">
+                      <div className="space-y-3">
+                        <label className="technical-label mr-2">حد التحويلات</label>
+                        <input
+                          type="number"
+                          required
+                          value={newUserData.maxStoredTransfers}
+                          onChange={(e) => setNewUserData(prev => ({ ...prev, maxStoredTransfers: e.target.value }))}
+                          className="block w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all text-slate-900 font-black font-mono"
+                          dir="ltr"
+                        />
+                      </div>
+                      <div className="space-y-3">
+                        <label className="technical-label mr-2">مدة الانتظار (د)</label>
+                        <input
+                          type="number"
+                          required
+                          value={newUserData.ibanCooldownMinutes}
+                          onChange={(e) => setNewUserData(prev => ({ ...prev, ibanCooldownMinutes: e.target.value }))}
+                          className="block w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all text-slate-900 font-black font-mono"
+                          dir="ltr"
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-400 mb-1.5">مدة الانتظار بين التحويلات (بالدقائق)</label>
-                      <input
-                        type="number"
-                        value={newUserData.ibanCooldownMinutes}
-                        onChange={(e) => setNewUserData(prev => ({ ...prev, ibanCooldownMinutes: e.target.value }))}
-                        className="block w-full px-3 py-2.5 border border-[#333] rounded-lg focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm bg-[#141418] text-white transition-colors font-mono"
-                        dir="ltr"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-400 mb-1.5">مستوى الصلاحية</label>
+                    <div className="space-y-3">
+                      <label className="technical-label mr-2">مستوى الصلاحية</label>
                       <select
                         value={newUserData.role}
                         onChange={(e) => setNewUserData(prev => ({ ...prev, role: e.target.value as Role }))}
-                        className="block w-full px-3 py-2.5 border border-[#333] rounded-lg focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm bg-[#141418] text-white transition-colors"
+                        className="block w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all text-slate-900 font-bold appearance-none"
                       >
                         <option value="employee">موظف تحويلات</option>
                         <option value="manager">مدير نظام</option>
                         <option value="accountant">محاسب مالي</option>
                       </select>
                     </div>
-                    <div className="flex items-center gap-4">
-                      <div className="flex-1">
-                        <label className="block text-xs font-bold text-slate-400 mb-1.5">
-                          الرصيد المخصص (USD)
-                        </label>
-                        <input
-                          type="number"
-                          value={newUserData.balance}
-                          disabled={newUserData.isUnlimited}
-                          onChange={(e) => setNewUserData(prev => ({ ...prev, balance: e.target.value }))}
-                          min="0"
-                          className="block w-full px-3 py-2.5 border border-[#333] rounded-lg focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm bg-[#141418] text-white transition-colors font-mono text-left disabled:opacity-50"
-                          dir="ltr"
-                        />
-                      </div>
-                      <div className="pt-6">
-                        <label className="flex items-center gap-2 cursor-pointer group">
-                          <div className={`w-10 h-5 rounded-full transition-colors relative ${newUserData.isUnlimited ? 'bg-emerald-500' : 'bg-[#222]'}`}>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <label className="technical-label mr-2">الرصيد المخصص (USD)</label>
+                        <label className="flex items-center gap-3 cursor-pointer group">
+                          <span className="text-[10px] font-black text-slate-400 group-hover:text-indigo-600 transition-colors uppercase tracking-widest">إنفينيتي</span>
+                          <div className={`w-12 h-6 rounded-full transition-all relative ${newUserData.isUnlimited ? 'bg-indigo-600 shadow-lg shadow-indigo-100' : 'bg-slate-200'}`}>
                             <input 
                               type="checkbox" 
                               className="sr-only" 
                               checked={newUserData.isUnlimited}
                               onChange={(e) => setNewUserData(prev => ({ ...prev, isUnlimited: e.target.checked }))}
                             />
-                            <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${newUserData.isUnlimited ? 'left-6' : 'left-1'}`}></div>
+                            <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${newUserData.isUnlimited ? 'left-7' : 'left-1'}`}></div>
                           </div>
-                          <span className="text-[10px] font-bold text-slate-500 group-hover:text-slate-300">إنفينيتي</span>
                         </label>
                       </div>
+                      <input
+                        type="number"
+                        value={newUserData.balance}
+                        disabled={newUserData.isUnlimited}
+                        onChange={(e) => setNewUserData(prev => ({ ...prev, balance: e.target.value }))}
+                        min="0"
+                        className="block w-full px-6 py-5 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all text-slate-900 font-black font-mono text-2xl disabled:opacity-30 disabled:grayscale"
+                        dir="ltr"
+                        placeholder="0.00"
+                      />
                     </div>
-                    <p className="text-[10px] text-slate-500 mt-1 font-mono">AVAILABLE: {formatCurrency(currentUser.balance, currentUser.isUnlimited)}</p>
                     <button
                       type="submit"
-                      className="w-full flex justify-center items-center gap-2 py-3 px-4 border border-emerald-500/50 rounded-lg text-sm font-bold text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500 hover:text-[#050505] transition-all active:scale-[0.98] mt-4"
+                      className="w-full flex justify-center items-center gap-4 py-5 px-8 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl shadow-2xl shadow-indigo-100 transition-all active:scale-[0.98] font-black text-xl"
                     >
-                      <Plus size={16} />
-                      تأكيد وإصدار
+                      <Plus size={24} />
+                      تأكيد وإصدار التصريح
                     </button>
                   </form>
                 </div>
               </div>
 
               {/* Users List */}
-              <div className="lg:col-span-2">
-                <div className="bg-[#111] border border-[#333] rounded-xl overflow-hidden">
-                  <div className="p-5 border-b border-[#222] flex items-center justify-between bg-[#141418]">
-                    <h3 className="text-base font-bold text-white flex items-center gap-2">
-                      <Users size={18} className="text-slate-400" />
+              <div className="lg:col-span-8">
+                <div className="bento-card overflow-hidden">
+                  <div className="p-8 border-b border-slate-50 flex items-center justify-between bg-slate-50/30">
+                    <h3 className="text-xl font-black text-slate-900 flex items-center gap-4">
+                      <div className="w-10 h-10 bg-white rounded-xl shadow-sm border border-slate-100 flex items-center justify-center text-indigo-600">
+                        <Users size={20} />
+                      </div>
                       سجل التصاريح النشطة
                     </h3>
-                    <span className="bg-[#0a0a0a] border border-[#333] text-slate-400 text-xs font-mono px-2 py-1 rounded">
+                    <span className="bg-indigo-50 text-indigo-600 text-[10px] font-black px-4 py-2 rounded-full border border-indigo-100 uppercase tracking-widest">
                       TOTAL: {users.length}
                     </span>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-right">
-                      <thead className="bg-[#0a0a0a] text-slate-500 text-xs uppercase font-mono border-b border-[#222]">
-                        <tr>
-                          <th className="px-6 py-4">الهوية</th>
-                          <th className="px-6 py-4">المعرف</th>
-                          <th className="px-6 py-4">المستوى</th>
-                          <th className="px-6 py-4">التحويلات المخزنة</th>
-                          <th className="px-6 py-4">الرصيد (USD)</th>
-                          <th className="px-6 py-4">إجراءات</th>
+                      <thead>
+                        <tr className="bg-slate-50/50 text-slate-400 text-[10px] font-black uppercase tracking-widest border-b border-slate-100">
+                          <th className="px-10 py-5">الهوية</th>
+                          <th className="px-10 py-5">المستوى</th>
+                          <th className="px-10 py-5">التحويلات</th>
+                          <th className="px-10 py-5">الرصيد (USD)</th>
+                          <th className="px-10 py-5">إجراءات</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-[#222]">
+                      <tbody className="divide-y divide-slate-50">
                         {users.map(u => (
-                          <tr key={u.id} className="hover:bg-[#16161a] transition-colors">
-                            <td className="px-6 py-4 font-bold text-slate-200 text-sm">{u.name}</td>
-                            <td className="px-6 py-4 text-xs font-mono text-slate-400" dir="ltr">{u.username}</td>
-                            <td className="px-6 py-4">
-                              <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded text-[10px] font-mono font-bold bg-[#222] text-slate-300 border border-[#333]">
-                                {getRoleIcon(u.role)} {u.role.toUpperCase()}
+                          <tr key={u.id} className="hover:bg-slate-50/50 transition-colors group">
+                            <td className="px-10 py-6">
+                              <p className="font-black text-slate-900 group-hover:text-indigo-600 transition-colors">{u.name}</p>
+                              <p className="text-[10px] font-mono font-bold text-slate-400 mt-1" dir="ltr">@{u.username}</p>
+                            </td>
+                            <td className="px-10 py-6">
+                              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-[10px] font-black bg-slate-50 text-slate-600 border border-slate-100 uppercase tracking-widest">
+                                {getRoleIcon(u.role)} {u.role}
                               </span>
                             </td>
-                            <td className="px-6 py-4">
-                              <div className="flex flex-col">
-                                <span className={`text-xs font-mono font-bold ${u.storedTransfersCount! >= u.maxStoredTransfers! ? 'text-red-400' : 'text-emerald-400'}`}>
+                            <td className="px-10 py-6">
+                              <div className="flex flex-col gap-2">
+                                <span className={`text-[10px] font-black font-mono ${u.storedTransfersCount! >= u.maxStoredTransfers! ? 'text-red-500' : 'text-indigo-600'}`}>
                                   {u.storedTransfersCount} / {u.maxStoredTransfers}
                                 </span>
-                                <div className="w-16 h-1 bg-[#222] rounded-full mt-1 overflow-hidden">
-                                  <div 
-                                    className={`h-full transition-all ${u.storedTransfersCount! >= u.maxStoredTransfers! ? 'bg-red-500' : 'bg-emerald-500'}`}
-                                    style={{ width: `${Math.min(100, (u.storedTransfersCount! / u.maxStoredTransfers!) * 100)}%` }}
+                                <div className="w-24 h-2 bg-slate-100 rounded-full overflow-hidden">
+                                  <motion.div 
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${Math.min(100, (u.storedTransfersCount! / u.maxStoredTransfers!) * 100)}%` }}
+                                    className={`h-full transition-all ${u.storedTransfersCount! >= u.maxStoredTransfers! ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.4)]' : 'bg-indigo-600 shadow-[0_0_8px_rgba(79,70,229,0.4)]'}`}
                                   />
                                 </div>
                               </div>
                             </td>
-                            <td className="px-6 py-4 font-mono font-bold text-white text-sm" dir="ltr">
+                            <td className="px-10 py-6 font-mono font-black text-slate-900" dir="ltr">
                               {formatCurrency(u.balance, u.isUnlimited)}
                             </td>
-                            <td className="px-6 py-4">
-                              <div className="flex items-center gap-2">
+                            <td className="px-10 py-6">
+                              <div className="flex items-center gap-3">
                                 <button 
                                   onClick={() => {
                                     const amountStr = prompt('أدخل المبلغ الجديد أو "inf" للرصيد اللانهائي:', u.isUnlimited ? 'inf' : u.balance.toString());
@@ -1199,17 +1331,17 @@ export default function App() {
                                       handleRechargeUser(u.id, finalBalance, !!finalIsUnlimited, finalMaxStored, finalCooldown);
                                     }
                                   }}
-                                  className="p-2 text-emerald-500 hover:bg-emerald-500/10 rounded-lg transition-colors"
+                                  className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all active:scale-90"
                                   title="تعديل البيانات والشحن"
                                 >
-                                  <Zap size={16} />
+                                  <Zap size={18} />
                                 </button>
                                 <button 
                                   onClick={() => handleDeleteUser(u.id)}
-                                  className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                                  className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-all active:scale-90"
                                   title="حذف المستخدم"
                                 >
-                                  <Trash2 size={16} />
+                                  <Trash2 size={18} />
                                 </button>
                               </div>
                             </td>
@@ -1226,108 +1358,135 @@ export default function App() {
 
       case 'history':
         return (
-          <div className="bg-[#111] border border-[#333] rounded-xl overflow-hidden animate-in fade-in duration-300">
-            <div className="p-5 border-b border-[#222] flex items-center justify-between bg-[#141418]">
-              <h2 className="text-base font-bold text-white flex items-center gap-2">
-                <History size={18} className="text-slate-400" />
-                سجل العمليات المشفرة
-              </h2>
-              <span className="bg-[#0a0a0a] border border-[#333] text-slate-400 text-xs font-mono px-2 py-1 rounded">
-                RECORDS: {transactions.length}
-              </span>
+          <div className="space-y-10 animate-in fade-in duration-700">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-4xl font-black text-slate-900 tracking-tight">سجل العمليات</h2>
+                <p className="text-slate-500 font-medium mt-2 text-lg">مراقبة وتتبع كافة التحويلات المالية المشفرة</p>
+              </div>
             </div>
-            
-            {transactions.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-64 text-slate-600 font-mono text-sm">
-                <Terminal size={32} className="mb-4 opacity-50" />
-                <p>NO_RECORDS_FOUND</p>
+
+            <div className="bento-card overflow-hidden">
+              <div className="p-8 border-b border-slate-50 flex items-center justify-between bg-slate-50/30">
+                <h3 className="text-xl font-black text-slate-900 flex items-center gap-4">
+                  <div className="w-10 h-10 bg-white rounded-xl shadow-sm border border-slate-100 flex items-center justify-center text-indigo-600">
+                    <History size={20} />
+                  </div>
+                  سجل العمليات المشفرة
+                </h3>
+                <span className="bg-indigo-50 text-indigo-600 text-[10px] font-black px-4 py-2 rounded-full border border-indigo-100 uppercase tracking-widest">
+                  RECORDS: {transactions.length}
+                </span>
               </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-right">
-                  <thead className="bg-[#0a0a0a] text-slate-500 text-xs uppercase font-mono border-b border-[#222]">
-                    <tr>
-                      <th className="px-6 py-4">المرجع (TX_ID)</th>
-                      <th className="px-6 py-4">المستفيد</th>
-                      <th className="px-6 py-4">المبلغ</th>
-                      <th className="px-6 py-4">التاريخ (UTC)</th>
-                      <th className="px-6 py-4">المصدر</th>
-                      <th className="px-6 py-4">الحالة</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#222]">
-                    {transactions.map(tx => (
-                      <tr key={tx.id} className="hover:bg-[#16161a] transition-colors">
-                        <td className="px-6 py-4">
-                          <span className="text-xs font-mono text-slate-400 bg-[#0a0a0a] border border-[#333] px-2 py-1 rounded">{tx.id}</span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <p className="text-sm font-bold text-slate-200">{tx.recipientName}</p>
-                          <p className="text-xs text-slate-500 font-mono mt-1" dir="ltr">{tx.iban}</p>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className="text-sm font-mono font-bold text-white" dir="ltr">{formatCurrency(tx.amount)}</span>
-                        </td>
-                        <td className="px-6 py-4 text-xs font-mono text-slate-500" dir="ltr">{formatDate(tx.date)}</td>
-                        <td className="px-6 py-4 text-xs font-mono text-slate-400">{tx.createdBy}</td>
-                        <td className="px-6 py-4">
-                          <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                            <CheckCircle2 size={12} /> SECURE_OK
-                          </span>
-                        </td>
+              
+              {transactions.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-96 text-slate-400 font-bold italic">
+                  <Terminal size={64} className="mb-8 opacity-10" />
+                  <p className="text-xl">لا توجد سجلات متاحة حالياً</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-right">
+                    <thead>
+                      <tr className="bg-slate-50/50 text-slate-400 text-[10px] font-black uppercase tracking-widest border-b border-slate-100">
+                        <th className="px-10 py-5">المرجع (TX_ID)</th>
+                        <th className="px-10 py-5">المستفيد</th>
+                        <th className="px-10 py-5">المبلغ</th>
+                        <th className="px-10 py-5">التاريخ (UTC)</th>
+                        <th className="px-10 py-5">المصدر</th>
+                        <th className="px-10 py-5">الحالة</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                    </thead>
+                    <tbody className="divide-y divide-slate-50">
+                      {transactions.map(tx => (
+                        <tr key={tx.id} className="hover:bg-slate-50/50 transition-colors group">
+                          <td className="px-10 py-6">
+                            <span className="text-[10px] font-mono font-black text-indigo-600 bg-indigo-50 border border-indigo-100 px-4 py-2 rounded-xl uppercase tracking-wider">{tx.id}</span>
+                          </td>
+                          <td className="px-10 py-6">
+                            <p className="font-black text-slate-900 group-hover:text-indigo-600 transition-colors">{tx.recipientName}</p>
+                            <p className="text-[10px] text-slate-400 font-mono mt-1" dir="ltr">{tx.iban}</p>
+                          </td>
+                          <td className="px-10 py-6">
+                            <span className="font-mono font-black text-slate-900" dir="ltr">{formatCurrency(tx.amount)}</span>
+                          </td>
+                          <td className="px-10 py-6 text-xs font-bold text-slate-500" dir="ltr">{formatDate(tx.date)}</td>
+                          <td className="px-10 py-6">
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
+                              {tx.createdBy}
+                            </span>
+                          </td>
+                          <td className="px-10 py-6">
+                            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-[10px] font-black bg-emerald-50 text-emerald-600 border border-emerald-100 shadow-sm shadow-emerald-50">
+                              <CheckCircle2 size={14} /> SECURE_OK
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           </div>
         );
     }
   };
 
   return (
-    <div dir="rtl" className="min-h-screen bg-[#050505] text-slate-300 font-sans flex overflow-hidden selection:bg-emerald-500/30">
+    <div dir="rtl" className="min-h-screen bg-slate-50 text-slate-900 font-sans flex overflow-hidden selection:bg-indigo-500/30">
       
       {/* Mobile Sidebar Overlay */}
-      {isSidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-black/80 z-40 lg:hidden backdrop-blur-sm transition-opacity duration-300"
-          onClick={() => setIsSidebarOpen(false)}
-        />
-      )}
+      <AnimatePresence>
+        {isSidebarOpen && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-slate-900/20 z-40 lg:hidden backdrop-blur-sm"
+            onClick={() => setIsSidebarOpen(false)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Sidebar */}
       <aside className={`
-        fixed inset-y-0 right-0 z-50 w-72 bg-[#0a0a0a] border-l border-[#222] transition-transform duration-300 ease-in-out flex flex-col
+        fixed inset-y-0 right-0 z-50 w-80 bg-white border-l border-slate-100 transition-transform duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] flex flex-col shadow-2xl lg:shadow-none
         ${isSidebarOpen ? 'translate-x-0' : 'translate-x-full'} lg:translate-x-0 lg:static lg:block
       `}>
-        <div className="h-16 flex items-center justify-between px-6 border-b border-[#222] bg-[#050505]">
-          <div className="flex items-center gap-3 text-white">
-            <ShieldCheck size={24} className="text-emerald-500" />
-            <span className="font-bold text-lg tracking-tight">نظام التحويلات</span>
+        <div className="h-24 flex items-center justify-between px-10 border-b border-slate-50">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-indigo-600 rounded-[1rem] flex items-center justify-center shadow-2xl shadow-indigo-200 rotate-3 group hover:rotate-0 transition-transform duration-500">
+              <ShieldCheck size={28} className="text-white" />
+            </div>
+            <div className="flex flex-col">
+              <span className="font-black text-2xl tracking-tight text-slate-900 leading-none">نظام التحويل</span>
+              <span className="technical-label text-[8px] mt-1">v4.2.0-STABLE</span>
+            </div>
           </div>
-          <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden text-slate-500 hover:text-white transition-colors">
-            <X size={24} />
+          <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden p-3 text-slate-400 hover:text-indigo-600 transition-colors">
+            <X size={28} />
           </button>
         </div>
 
-        <div className="p-6 border-b border-[#222] bg-[#0a0a0a]">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-[#111] border border-[#333] flex items-center justify-center text-white font-mono font-bold text-xl shrink-0">
+        <div className="p-8">
+          <div className="flex items-center gap-5 p-6 bg-slate-50 rounded-[2rem] border border-slate-100 shadow-inner">
+            <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center text-indigo-600 font-mono font-black text-2xl shadow-sm border border-slate-100">
               {currentUser.username.substring(0, 2).toUpperCase()}
             </div>
             <div className="min-w-0">
-              <p className="text-white font-bold text-sm truncate">{currentUser.name}</p>
-              <p className="text-[10px] text-slate-500 font-mono mt-1 flex items-center gap-1 uppercase truncate">
-                {getRoleIcon(currentUser.role)}
-                {currentUser.role}
-              </p>
+              <p className="text-slate-900 font-black text-base truncate">{currentUser.name}</p>
+              <div className="flex items-center gap-2 mt-1">
+                <div className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg">
+                  {getRoleIcon(currentUser.role)}
+                </div>
+                <span className="technical-label text-[10px] uppercase tracking-widest">{currentUser.role}</span>
+              </div>
             </div>
           </div>
         </div>
 
-        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto custom-scrollbar">
+        <nav className="flex-1 px-4 space-y-1 overflow-y-auto custom-scrollbar">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentView === item.id;
@@ -1338,54 +1497,69 @@ export default function App() {
                   setCurrentView(item.id as View);
                   setIsSidebarOpen(false);
                 }}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all font-medium text-sm ${
+                className={`w-full flex items-center gap-3 px-6 py-4 rounded-2xl transition-all font-bold text-sm group ${
                   isActive 
-                    ? 'bg-[#1a1a24] text-white border border-[#333]' 
-                    : 'text-slate-400 hover:bg-[#111] hover:text-white border border-transparent'
+                    ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-200' 
+                    : 'text-slate-500 hover:bg-slate-50 hover:text-indigo-600'
                 }`}
               >
-                <Icon size={18} className={isActive ? 'text-emerald-500' : 'text-slate-500'} />
+                <Icon size={18} className={isActive ? 'text-white' : 'group-hover:scale-110 transition-transform'} />
                 {item.label}
               </button>
             );
           })}
         </nav>
 
-        <div className="p-4 border-t border-[#222] bg-[#050505]">
+        <div className="p-6 border-t border-slate-50">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-400 hover:bg-red-500/10 hover:border-red-500/20 border border-transparent transition-colors font-medium text-sm"
+            className="w-full flex items-center gap-3 px-6 py-4 rounded-2xl text-red-500 hover:bg-red-50 transition-all font-bold text-sm group"
           >
-            <LogOut size={18} />
+            <LogOut size={18} className="group-hover:-translate-x-1 transition-transform" />
             إنهاء الجلسة
           </button>
         </div>
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden bg-[#050505]">
+      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden bg-slate-50">
         {/* Top Header */}
-        <header className="bg-[#0a0a0a] border-b border-[#222] h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8 shrink-0 z-10">
-          <div className="flex items-center gap-4">
+        <header className="glass h-24 flex items-center justify-between px-6 sm:px-12 shrink-0 z-10 sticky top-0 border-b border-slate-100/50">
+          <div className="flex items-center gap-8">
             <button 
               onClick={() => setIsSidebarOpen(true)}
-              className="lg:hidden p-2 text-slate-400 hover:bg-[#111] rounded-lg transition-colors"
+              className="lg:hidden p-4 text-slate-400 hover:bg-slate-100 rounded-2xl transition-all"
             >
-              <Menu size={24} />
+              <Menu size={28} />
             </button>
-            <h1 className="text-sm font-bold text-white hidden sm:block">
-              {navItems.find(i => i.id === currentView)?.label}
-            </h1>
+            <div className="hidden sm:block">
+              <div className="flex items-center gap-4">
+                <div className="w-2 h-8 bg-indigo-600 rounded-full"></div>
+                <div>
+                  <h1 className="text-xl font-black text-slate-900 tracking-tight">
+                    {navItems.find(i => i.id === currentView)?.label}
+                  </h1>
+                  <p className="technical-label text-[9px] mt-0.5 opacity-50">SECURE_SESSION_ACTIVE</p>
+                </div>
+              </div>
+            </div>
           </div>
           
-          <div className="flex items-center gap-3">
-            <div className="hidden md:flex items-center gap-2 text-[11px] font-mono text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded border border-emerald-500/20">
-              <Globe size={14} />
-              <span dir="ltr">IP: 198.51.100.42 (Arizona, USA) - SECURE</span>
+          <div className="flex items-center gap-10">
+            <div className="hidden xl:flex items-center gap-5 px-6 py-3 bg-slate-50 rounded-2xl border border-slate-100 shadow-inner">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                <span className="technical-label text-[10px]">System Online</span>
+              </div>
+              <div className="w-px h-4 bg-slate-200"></div>
+              <span className="font-mono text-[10px] text-slate-400 font-bold" dir="ltr">NODE_ID: 157-AFG</span>
             </div>
-            <div className="flex flex-col items-end sm:ml-4">
-              <span className="text-[9px] font-mono text-slate-500 uppercase leading-none mb-1">Balance</span>
-              <span className="text-xs sm:text-sm font-mono font-bold text-emerald-400 leading-none" dir="ltr">{formatCurrency(currentUser.balance)}</span>
+            
+            <div className="flex flex-col items-end">
+              <span className="technical-label text-[9px] mb-1 opacity-60">Available Balance</span>
+              <span className="text-2xl sm:text-3xl font-mono font-black text-indigo-600 tracking-tighter leading-none" dir="ltr">
+                {formatCurrency(currentUser.balance, currentUser.isUnlimited)}
+              </span>
             </div>
           </div>
         </header>

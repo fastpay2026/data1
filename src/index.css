@@ -1,29 +1,42 @@
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Cairo:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Cairo", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter", "Cairo", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
 
 body {
-  font-family: "Cairo", sans-serif;
-  background-color: #050505;
-  color: #cbd5e1;
+  font-family: "Inter", "Cairo", sans-serif;
+  background-color: #F8FAFC;
+  color: #0F172A;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 @layer utilities {
+  .glass {
+    @apply bg-white/80 backdrop-blur-md border border-white/20;
+  }
+  
   .custom-scrollbar::-webkit-scrollbar {
     width: 5px;
     height: 5px;
   }
+
   .custom-scrollbar::-webkit-scrollbar-track {
-    background: #0a0a0a;
+    @apply bg-transparent;
   }
+
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: #222;
-    border-radius: 10px;
+    @apply bg-slate-200 rounded-full hover:bg-slate-300 transition-colors;
   }
-  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: #333;
+
+  .bento-card {
+    @apply bg-white border border-slate-200/60 rounded-[2rem] shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_4px_6px_-2px_rgba(0,0,0,0.05)] transition-all duration-300 hover:shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_10px_10px_-5px_rgba(0,0,0,0.04)] hover:-translate-y-1;
+  }
+
+  .technical-label {
+    @apply text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] font-mono;
   }
 }
