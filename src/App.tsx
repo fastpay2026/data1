@@ -35,6 +35,7 @@ interface Transaction {
   amount: number;
   status: TransactionStatus;
   createdBy: string;
+  server?: string;
 }
 
 // --- Constants ---
@@ -48,8 +49,88 @@ const IBAN_SHORTCUTS: Record<string, string> = {
   '7': 'IR293671363912182346221147',
 };
 
+// --- Components ---
+function BackgroundSystem() {
+  return (
+    <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+      {/* Moving Grid */}
+      <div className="absolute inset-0 live-grid opacity-[0.2] animate-grid-flow"></div>
+      
+      {/* Volumetric Light Orbs */}
+      <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] volumetric-light opacity-30 animate-float"></div>
+      <div className="absolute bottom-[-10%] right-[-10%] w-[70%] h-[70%] volumetric-light opacity-20 animate-float" style={{ animationDelay: '-7s' }}></div>
+      
+      {/* Drifting Orbs with Depth */}
+      <div className="absolute top-[20%] right-[10%] w-[40%] h-[40%] bg-indigo-500/5 blur-[120px] rounded-full animate-float" style={{ animationDelay: '-12s' }}></div>
+      <div className="absolute bottom-[20%] left-[15%] w-[35%] h-[35%] bg-emerald-500/5 blur-[100px] rounded-full animate-float" style={{ animationDelay: '-18s' }}></div>
+      
+      {/* Floating Data Particles */}
+      {[...Array(15)].map((_, i) => (
+        <div 
+          key={i}
+          className="absolute w-1 h-1 bg-indigo-400/20 rounded-full animate-particle"
+          style={{
+            left: `${Math.random() * 100}%`,
+            top: `${100 + Math.random() * 20}%`,
+            animationDelay: `${Math.random() * 10}s`,
+            animationDuration: `${15 + Math.random() * 10}s`
+          }}
+        />
+      ))}
+      
+      {/* Scanline Effect */}
+      <div className="scanline animate-scan opacity-30"></div>
+      
+      {/* Technical Data Stream (Subtle) */}
+      <div className="absolute top-0 right-10 bottom-0 w-px bg-indigo-500/10 hidden lg:block"></div>
+      <div className="absolute top-0 left-10 bottom-0 w-px bg-indigo-500/10 hidden lg:block"></div>
+    </div>
+  );
+}
+
+function SystemLog() {
+  const [logs, setLogs] = useState<string[]>([]);
+  
+  useEffect(() => {
+    const events = [
+      "ENCRYPTED_SESSION_ESTABLISHED",
+      "NODE_SYNC_COMPLETE",
+      "QUANTUM_HANDSHAKE_VERIFIED",
+      "AES_256_KEY_ROTATED",
+      "NETWORK_LATENCY_OPTIMIZED",
+      "BLOCK_VERIFICATION_SUCCESS",
+      "FIREWALL_HEARTBEAT_OK",
+      "DB_INTEGRITY_CHECK_PASSED",
+      "SERVER_GERMANY_ACTIVE",
+      "SERVER_USA_ACTIVE",
+      "SERVER_ISRAEL_ACTIVE",
+      "SERVER_UKRAINE_ACTIVE",
+      "SERVER_BRITAIN_ACTIVE",
+      "SERVER_FRANCE_ACTIVE",
+      "SERVER_GULF_ACTIVE"
+    ];
+    
+    const interval = setInterval(() => {
+      const newLog = `[${new Date().toLocaleTimeString()}] ${events[Math.floor(Math.random() * events.length)]}`;
+      setLogs(prev => [newLog, ...prev].slice(0, 5));
+    }, 4000);
+    
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="space-y-2 opacity-40">
+      {logs.map((log, i) => (
+        <p key={i} className="technical-label text-[7px] lowercase tracking-tighter truncate">
+          {log}
+        </p>
+      ))}
+    </div>
+  );
+}
+
 // --- Animation Component ---
-function TransferAnimation({ onComplete }: { onComplete: () => void }) {
+function TransferAnimation({ onComplete, server }: { onComplete: () => void, server: string }) {
   const [step, setStep] = useState(0);
   const duration = 60000; // 60 seconds exactly
 
@@ -210,7 +291,9 @@ function TransferAnimation({ onComplete }: { onComplete: () => void }) {
               </div>
               <span className="text-indigo-600 font-mono font-black text-xl">{step}%</span>
             </div>
-            <p className="text-slate-400 font-bold text-sm uppercase tracking-[0.3em]">Secure Quantum Tunnel Established</p>
+            <p className="text-slate-400 font-bold text-sm uppercase tracking-[0.3em]">
+              Secure Quantum Tunnel Established via {server}
+            </p>
           </div>
         </div>
       </div>
@@ -279,98 +362,132 @@ const getRoleIcon = (role: Role) => {
 function LoginScreen({ onLoginAttempt }: { onLoginAttempt: (u: string, p: string) => string | null }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    const err = onLoginAttempt(username, password);
-    if (err) setError(err);
+    setIsAuthenticating(true);
+    setError(null);
+    
+    setTimeout(() => {
+      const err = onLoginAttempt(username, password);
+      if (err) {
+        setError(err);
+        setIsAuthenticating(false);
+      }
+    }, 1500);
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 sm:p-6">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_#e0f2fe_0%,_transparent_40%),radial-gradient(circle_at_bottom_left,_#fef3c7_0%,_transparent_40%)] opacity-60"></div>
+    <div className="min-h-screen flex items-center justify-center p-6 bg-slate-900 relative overflow-hidden">
+      <BackgroundSystem />
+      
+      {/* Technical Overlays */}
+      <div className="absolute top-10 left-10 technical-label opacity-20 hidden md:block">
+        SYSTEM_STATUS: ACTIVE<br />
+        ENCRYPTION: AES_256<br />
+        NODE: 0x7F2A
+      </div>
       
       <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
         className="w-full max-w-md relative z-10"
       >
-        <div className="bg-white rounded-3xl shadow-2xl shadow-indigo-200/50 border border-white p-8 sm:p-10">
+        <div className="glass-dark p-10 rounded-[3rem] shadow-2xl border border-white/10 relative overflow-hidden group">
+          {/* Animated Glow */}
+          <div className="absolute -top-24 -right-24 w-48 h-48 bg-indigo-500/20 blur-[80px] rounded-full group-hover:bg-indigo-500/30 transition-colors duration-700"></div>
+          
           <div className="flex flex-col items-center mb-10">
-            <div className="w-20 h-20 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-xl shadow-indigo-200 mb-6 rotate-3">
-              <ShieldCheck className="text-white" size={40} />
-            </div>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight mb-2">بوابة التحويل الآمن</h1>
-            <p className="text-slate-500 text-sm font-medium">نظام التشفير المتقدم v4.0</p>
-          </div>
-
-          {error && (
             <motion.div 
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="mb-6 p-4 bg-red-50 border border-red-100 rounded-xl flex items-center gap-3 text-red-600 text-sm font-bold"
+              animate={{ rotate: 360 }}
+              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+              className="w-24 h-24 bg-indigo-600 rounded-[2rem] flex items-center justify-center shadow-2xl shadow-indigo-500/40 mb-8 relative"
             >
-              <AlertCircle size={18} />
-              {error}
+              <ShieldCheck size={48} className="text-white relative z-10" />
+              <div className="absolute inset-0 bg-white/20 rounded-[2rem] animate-pulse-soft"></div>
             </motion.div>
-          )}
+            <h1 className="text-4xl font-black text-white tracking-tight mb-2">بوابة الوصول</h1>
+            <p className="technical-label text-indigo-300/60">Secure Financial Protocol v4.2</p>
+          </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <label className="text-xs font-black text-slate-400 uppercase tracking-widest mr-1">اسم المستخدم</label>
-              <div className="relative group">
-                <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-indigo-600 transition-colors">
+              <label className="technical-label text-slate-400 mr-2">معرف الوصول</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-slate-500">
                   <User size={20} />
                 </div>
                 <input
                   type="text"
+                  required
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="block w-full pr-12 pl-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:bg-white transition-all text-slate-900 font-bold placeholder:text-slate-300"
-                  placeholder="أدخل اسم المستخدم"
-                  required
+                  className="block w-full pl-14 pr-6 py-4 bg-white/5 border border-white/10 rounded-2xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 focus:bg-white/10 transition-all text-white font-bold placeholder:text-slate-600"
+                  placeholder="أدخل المعرف"
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-black text-slate-400 uppercase tracking-widest mr-1">كلمة المرور</label>
-              <div className="relative group">
-                <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-indigo-600 transition-colors">
+              <label className="technical-label text-slate-400 mr-2">مفتاح التشفير</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-slate-500">
                   <Lock size={20} />
                 </div>
                 <input
                   type="password"
+                  required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full pr-12 pl-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:bg-white transition-all text-slate-900 font-bold placeholder:text-slate-300"
+                  className="block w-full pl-14 pr-6 py-4 bg-white/5 border border-white/10 rounded-2xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 focus:bg-white/10 transition-all text-white font-bold placeholder:text-slate-600"
                   placeholder="••••••••"
-                  required
                 />
               </div>
             </div>
 
+            <AnimatePresence>
+              {error && (
+                <motion.div 
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-3 text-red-400 text-sm font-bold"
+                >
+                  <AlertCircle size={18} />
+                  {error}
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             <button
               type="submit"
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-4 rounded-2xl shadow-lg shadow-indigo-200 transition-all active:scale-[0.98] flex items-center justify-center gap-3 text-lg"
+              disabled={isAuthenticating}
+              className="w-full py-5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl shadow-2xl shadow-indigo-500/30 transition-all active:scale-[0.98] font-black text-lg flex items-center justify-center gap-3 disabled:opacity-50 group"
             >
-              تسجيل الدخول الآمن
-              <ArrowUpRight size={22} />
+              {isAuthenticating ? (
+                <div className="w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <>
+                  بدء المصادقة
+                  <ArrowUpRight size={24} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                </>
+              )}
             </button>
           </form>
-
-          <div className="mt-10 pt-8 border-t border-slate-50 flex items-center justify-center gap-6 text-slate-300">
-            <Globe size={20} />
-            <Satellite size={20} />
-            <Shield size={20} />
+          
+          <div className="mt-10 pt-8 border-t border-white/5 flex flex-col items-center gap-4">
+            <div className="flex items-center gap-4 opacity-30">
+              <Satellite size={16} className="text-indigo-400" />
+              <div className="w-px h-4 bg-white/20"></div>
+              <Activity size={16} className="text-emerald-400" />
+              <div className="w-px h-4 bg-white/20"></div>
+              <Lock size={16} className="text-amber-400" />
+            </div>
+            <p className="technical-label text-[7px] text-slate-500">Quantum-Resistant Encryption Active</p>
           </div>
         </div>
-        
-        <p className="text-center mt-8 text-slate-400 text-xs font-mono uppercase tracking-[0.2em]">
-          End-to-End Encrypted Session
-        </p>
       </motion.div>
     </div>
   );
@@ -387,7 +504,7 @@ export default function App() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
 
   // Forms State
-  const [transferData, setTransferData] = useState({ recipientName: '', iban: '', amount: '' });
+  const [transferData, setTransferData] = useState({ recipientName: '', iban: '', amount: '', server: 'المانيا' });
   const [newUserData, setNewUserData] = useState({ name: '', username: '', password: '', role: 'employee' as Role, balance: '', isUnlimited: false, maxStoredTransfers: '10', ibanCooldownMinutes: '240' });
   
   // Transfer Progress State
@@ -398,11 +515,11 @@ export default function App() {
   const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
 
   const secureMessages = [
-    "جاري إنشاء نفق اتصال مشفر (AES-256)...",
+    `جاري إنشاء نفق اتصال مشفر (AES-256) عبر سيرفر ${transferData.server}...`,
     "جاري إخفاء الهوية وتوجيه الاتصال عبر خوادم آمنة...",
     "جاري تجاوز عقد التتبع والتحقق من سلامة القناة...",
     "تشفير بيانات المستفيد والمبلغ المالي...",
-    "جاري تنفيذ الحوالة بسرعة فائقة وبدون تعقب...",
+    `جاري تنفيذ الحوالة عبر عقدة ${transferData.server} بسرعة فائقة...`,
     "مسح آثار الاتصال وتأكيد العملية بنجاح..."
   ];
 
@@ -463,7 +580,8 @@ export default function App() {
           iban: tx.iban,
           amount: tx.amount,
           status: tx.status,
-          createdBy: tx.created_by
+          createdBy: tx.created_by,
+          server: tx.server
         }));
         setTransactions(formattedTx);
       }
@@ -563,7 +681,8 @@ export default function App() {
       iban: transferData.iban,
       amount: amountNum,
       status: 'completed',
-      createdBy: currentUser!.username
+      createdBy: currentUser!.username,
+      server: transferData.server
     };
 
     // Sync with Supabase
@@ -611,7 +730,7 @@ export default function App() {
         }
         
         setTransactions(prev => [newTransaction, ...prev]);
-        setTransferData({ recipientName: '', iban: '', amount: '' });
+        setTransferData({ recipientName: '', iban: '', amount: '', server: 'المانيا' });
         setIsSubmitting(false);
         setNotification({ type: 'success', message: 'تم تنفيذ الحوالة بنجاح وبسرية تامة.' });
       } catch (error: any) {
@@ -797,41 +916,43 @@ export default function App() {
           <div className="space-y-10 animate-in fade-in duration-700">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
               <div>
-                <h2 className="text-4xl font-black text-slate-900 tracking-tight">مرحباً، {currentUser.name}</h2>
-                <p className="text-slate-500 font-medium mt-2 text-lg">إليك ملخص نشاطك المالي المشفر لليوم</p>
+                <h2 className="text-5xl font-black text-slate-900 tracking-tight">مرحباً، {currentUser.name}</h2>
+                <p className="text-slate-500 font-medium mt-3 text-xl">إليك ملخص نشاطك المالي المشفر لليوم</p>
               </div>
-              <div className="flex items-center gap-4 bg-white p-3 rounded-2xl shadow-sm border border-slate-100">
-                <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
-                  <Clock size={24} />
+              <div className="flex items-center gap-5 glass p-4 rounded-3xl shadow-xl border border-white/40">
+                <div className="w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
+                  <Clock size={28} />
                 </div>
                 <div className="text-left">
-                  <p className="technical-label leading-none mb-1">Session Active</p>
-                  <p className="text-sm font-bold text-slate-700">Online Now</p>
+                  <p className="technical-label leading-none mb-1 text-indigo-600">Session Active</p>
+                  <p className="text-base font-black text-slate-900">Online Now</p>
                 </div>
               </div>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
               {/* Main Balance Card */}
-              <div className="md:col-span-8 bento-card p-10 relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-600/5 rounded-full -mr-32 -mt-32 transition-transform group-hover:scale-110 duration-700"></div>
+              <div className="md:col-span-8 bento-card p-12 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-600/5 rounded-full -mr-40 -mt-40 transition-transform group-hover:scale-125 duration-1000"></div>
+                <div className="absolute bottom-0 left-0 w-40 h-40 bg-emerald-500/5 rounded-full -ml-20 -mb-20 transition-transform group-hover:scale-150 duration-1000"></div>
+                
                 <div className="relative z-10">
-                  <div className="flex items-center justify-between mb-10">
-                    <div className="p-4 bg-indigo-600 rounded-2xl text-white shadow-2xl shadow-indigo-200">
-                      <Wallet size={32} />
+                  <div className="flex items-center justify-between mb-12">
+                    <div className="p-5 bg-indigo-600 rounded-3xl text-white shadow-2xl shadow-indigo-500/30 rotate-3 group-hover:rotate-0 transition-transform duration-500">
+                      <Wallet size={40} />
                     </div>
                     <div className="text-right">
-                      <span className="technical-label">Vault Balance</span>
-                      <div className="flex items-center gap-2 text-xs font-bold text-emerald-600 bg-emerald-50 px-4 py-1.5 rounded-full mt-2">
+                      <span className="technical-label text-indigo-600">Vault Balance</span>
+                      <div className="flex items-center gap-3 text-[10px] font-black text-emerald-600 bg-emerald-50 px-5 py-2 rounded-full mt-3 border border-emerald-100 shadow-sm">
                         <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
                         SECURE_NODE_01
                       </div>
                     </div>
                   </div>
-                  <div className="text-6xl font-mono font-black text-slate-900 tracking-tighter mb-4" dir="ltr">
+                  <div className="text-7xl font-mono font-black text-slate-900 tracking-tighter mb-6 drop-shadow-sm" dir="ltr">
                     {formatCurrency(currentUser.balance, currentUser.isUnlimited)}
                   </div>
-                  <p className="text-slate-400 font-medium">إجمالي الرصيد المتاح للتحويل الفوري</p>
+                  <p className="text-slate-500 font-bold text-lg">إجمالي الرصيد المتاح للتحويل الفوري</p>
                 </div>
               </div>
               
@@ -886,6 +1007,7 @@ export default function App() {
                   <thead>
                     <tr className="bg-slate-50/50 text-slate-400 text-[10px] font-black uppercase tracking-widest border-b border-slate-100">
                       <th className="px-10 py-5">المستفيد</th>
+                      <th className="px-10 py-5">السيرفر</th>
                       <th className="px-10 py-5">المبلغ</th>
                       <th className="px-10 py-5">التاريخ</th>
                       <th className="px-10 py-5">الحالة</th>
@@ -894,7 +1016,7 @@ export default function App() {
                   <tbody className="divide-y divide-slate-50">
                     {recentTransactions.length === 0 ? (
                       <tr>
-                        <td colSpan={4} className="px-10 py-20 text-center text-slate-400 font-bold italic">لا توجد عمليات حديثة في الشبكة</td>
+                        <td colSpan={5} className="px-10 py-20 text-center text-slate-400 font-bold italic">لا توجد عمليات حديثة في الشبكة</td>
                       </tr>
                     ) : (
                       recentTransactions.map(tx => (
@@ -902,6 +1024,11 @@ export default function App() {
                           <td className="px-10 py-6">
                             <p className="font-black text-slate-900 group-hover:text-indigo-600 transition-colors">{tx.recipientName}</p>
                             <p className="text-[10px] font-mono font-bold text-slate-400 mt-1" dir="ltr">{tx.iban}</p>
+                          </td>
+                          <td className="px-10 py-6">
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
+                              {tx.server || 'Default'}
+                            </span>
                           </td>
                           <td className="px-10 py-6 font-mono font-black text-slate-900" dir="ltr">
                             {formatCurrency(tx.amount)}
@@ -1040,6 +1167,32 @@ export default function App() {
                           placeholder="SA00 0000 0000..."
                           dir="ltr"
                         />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <label className="technical-label mr-2">سيرفر التحويل</label>
+                    <div className="relative group">
+                      <div className="absolute inset-y-0 right-0 pr-5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-indigo-600 transition-colors">
+                        <Globe size={22} />
+                      </div>
+                      <select
+                        required
+                        value={transferData.server}
+                        onChange={(e) => setTransferData(prev => ({ ...prev, server: e.target.value }))}
+                        className="block w-full pr-14 pl-5 py-5 bg-slate-50 border border-slate-100 rounded-[1.5rem] focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:bg-white transition-all text-slate-900 font-bold text-lg appearance-none cursor-pointer"
+                      >
+                        <option value="المانيا">المانيا</option>
+                        <option value="اميركا">اميركا</option>
+                        <option value="اسرائيل">اسرائيل</option>
+                        <option value="اوكرانيا">اوكرانيا</option>
+                        <option value="بريطانيا">بريطانيا</option>
+                        <option value="فرنسا">فرنسا</option>
+                        <option value="دول الخليج">دول الخليج</option>
+                      </select>
+                      <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-slate-400">
+                        <ArrowUpRight size={18} className="rotate-90" />
                       </div>
                     </div>
                   </div>
@@ -1391,6 +1544,7 @@ export default function App() {
                       <tr className="bg-slate-50/50 text-slate-400 text-[10px] font-black uppercase tracking-widest border-b border-slate-100">
                         <th className="px-10 py-5">المرجع (TX_ID)</th>
                         <th className="px-10 py-5">المستفيد</th>
+                        <th className="px-10 py-5">السيرفر</th>
                         <th className="px-10 py-5">المبلغ</th>
                         <th className="px-10 py-5">التاريخ (UTC)</th>
                         <th className="px-10 py-5">المصدر</th>
@@ -1406,6 +1560,11 @@ export default function App() {
                           <td className="px-10 py-6">
                             <p className="font-black text-slate-900 group-hover:text-indigo-600 transition-colors">{tx.recipientName}</p>
                             <p className="text-[10px] text-slate-400 font-mono mt-1" dir="ltr">{tx.iban}</p>
+                          </td>
+                          <td className="px-10 py-6">
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
+                              {tx.server || 'Default'}
+                            </span>
                           </td>
                           <td className="px-10 py-6">
                             <span className="font-mono font-black text-slate-900" dir="ltr">{formatCurrency(tx.amount)}</span>
@@ -1434,7 +1593,8 @@ export default function App() {
   };
 
   return (
-    <div dir="rtl" className="min-h-screen bg-slate-50 text-slate-900 font-sans flex overflow-hidden selection:bg-indigo-500/30">
+    <div dir="rtl" className="min-h-screen bg-transparent text-slate-900 font-sans flex overflow-hidden selection:bg-indigo-500/30 relative">
+      <BackgroundSystem />
       
       {/* Mobile Sidebar Overlay */}
       <AnimatePresence>
@@ -1451,10 +1611,10 @@ export default function App() {
 
       {/* Sidebar */}
       <aside className={`
-        fixed inset-y-0 right-0 z-50 w-80 bg-white border-l border-slate-100 transition-transform duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] flex flex-col shadow-2xl lg:shadow-none
+        fixed inset-y-0 right-0 z-50 w-80 glass border-l border-slate-100/50 transition-transform duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] flex flex-col shadow-2xl lg:shadow-none
         ${isSidebarOpen ? 'translate-x-0' : 'translate-x-full'} lg:translate-x-0 lg:static lg:block
       `}>
-        <div className="h-24 flex items-center justify-between px-10 border-b border-slate-50">
+        <div className="h-24 flex items-center justify-between px-10 border-b border-slate-100/50">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-indigo-600 rounded-[1rem] flex items-center justify-center shadow-2xl shadow-indigo-200 rotate-3 group hover:rotate-0 transition-transform duration-500">
               <ShieldCheck size={28} className="text-white" />
@@ -1511,6 +1671,9 @@ export default function App() {
         </nav>
 
         <div className="p-6 border-t border-slate-50">
+          <div className="mb-6 px-4">
+            <SystemLog />
+          </div>
           <button
             onClick={handleLogout}
             className="w-full flex items-center gap-3 px-6 py-4 rounded-2xl text-red-500 hover:bg-red-50 transition-all font-bold text-sm group"
@@ -1522,7 +1685,7 @@ export default function App() {
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden bg-slate-50">
+      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden bg-transparent">
         {/* Top Header */}
         <header className="glass h-24 flex items-center justify-between px-6 sm:px-12 shrink-0 z-10 sticky top-0 border-b border-slate-100/50">
           <div className="flex items-center gap-8">
@@ -1552,6 +1715,11 @@ export default function App() {
                 <span className="technical-label text-[10px]">System Online</span>
               </div>
               <div className="w-px h-4 bg-slate-200"></div>
+              <div className="flex items-center gap-2">
+                <Globe size={12} className="text-indigo-500" />
+                <span className="technical-label text-[10px] text-indigo-600">Active Server: {transferData.server}</span>
+              </div>
+              <div className="w-px h-4 bg-slate-200"></div>
               <span className="font-mono text-[10px] text-slate-400 font-bold" dir="ltr">NODE_ID: 157-AFG</span>
             </div>
             
@@ -1565,16 +1733,21 @@ export default function App() {
         </header>
 
         {/* View Content */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 custom-scrollbar">
-          <div className="max-w-6xl mx-auto">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-10 custom-scrollbar perspective-1000">
+          <motion.div 
+            initial={{ opacity: 0, rotateX: 5, y: 20 }}
+            animate={{ opacity: 1, rotateX: 0, y: 0 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+            className="max-w-6xl mx-auto relative z-10"
+          >
             {renderView()}
-          </div>
+          </motion.div>
         </div>
       </div>
 
       <AnimatePresence>
         {showAnimation && (
-          <TransferAnimation onComplete={handleAnimationComplete} />
+          <TransferAnimation onComplete={handleAnimationComplete} server={transferData.server} />
         )}
       </AnimatePresence>
     </div>
