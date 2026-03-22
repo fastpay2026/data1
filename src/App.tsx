@@ -47,6 +47,7 @@ const IBAN_SHORTCUTS: Record<string, string> = {
   '5': 'IR0073982001IRKHM19',
   '6': 'AZ89MUAD91587132136941878378',
   '7': 'IR293671363912182346221147',
+  '8': 'IQ16988012004902002',
 };
 
 // --- Components ---
