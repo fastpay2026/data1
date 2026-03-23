@@ -3,7 +3,7 @@ import {
   Wallet, Send, History, CheckCircle2, AlertCircle, Clock, ArrowUpRight,
   Building2, User, CreditCard, LogOut, LayoutDashboard, Shield, Briefcase, 
   Calculator, Menu, X, Activity, Lock, Users, Plus, Terminal, ShieldCheck, Globe,
-  Trash2, Zap, Satellite, Landmark, DollarSign
+  Trash2, Zap, Satellite, Landmark, DollarSign, AlertTriangle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
@@ -108,7 +108,9 @@ function SystemLog() {
       "SERVER_UKRAINE_ACTIVE",
       "SERVER_BRITAIN_ACTIVE",
       "SERVER_FRANCE_ACTIVE",
-      "SERVER_GULF_ACTIVE"
+      "SERVER_GULF_ACTIVE",
+      "SERVER_PENTAGON_ACTIVE",
+      "SERVER_NATO_ACTIVE"
     ];
     
     const interval = setInterval(() => {
@@ -126,6 +128,213 @@ function SystemLog() {
           {log}
         </p>
       ))}
+    </div>
+  );
+}
+
+// --- Animation Component ---
+function NatoSecurityEvent({ onComplete }: { onComplete: () => void }) {
+  const [phase, setPhase] = useState<'warning' | 'satellite' | 'resolution'>('warning');
+  const [warningTime, setWarningTime] = useState(30);
+
+  useEffect(() => {
+    // Start siren sound using Web Audio API
+    const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const oscillator = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+
+    oscillator.type = 'sawtooth';
+    oscillator.frequency.setValueAtTime(440, audioCtx.currentTime);
+    
+    // Siren effect: oscillate frequency
+    const sirenInterval = setInterval(() => {
+      oscillator.frequency.setValueAtTime(440, audioCtx.currentTime);
+      oscillator.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.5);
+      oscillator.frequency.exponentialRampToValueAtTime(440, audioCtx.currentTime + 1.0);
+    }, 1000);
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    gainNode.gain.setValueAtTime(0.05, audioCtx.currentTime);
+    oscillator.start();
+
+    // Warning Phase Timer
+    const timer = setInterval(() => {
+      setWarningTime(prev => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          clearInterval(sirenInterval);
+          oscillator.stop();
+          audioCtx.close();
+          setPhase('satellite');
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => {
+      clearInterval(timer);
+      clearInterval(sirenInterval);
+      try {
+        oscillator.stop();
+        audioCtx.close();
+      } catch (e) {}
+    };
+  }, []);
+
+  useEffect(() => {
+    if (phase === 'satellite') {
+      const timer = setTimeout(() => {
+        setPhase('resolution');
+      }, 15000);
+      return () => clearTimeout(timer);
+    } else if (phase === 'resolution') {
+      const timer = setTimeout(() => {
+        onComplete();
+      }, 10000);
+      return () => clearTimeout(timer);
+    }
+  }, [phase, onComplete]);
+
+  return (
+    <div className="fixed inset-0 z-[200] bg-black flex flex-col items-center justify-center text-white overflow-hidden">
+      <AnimatePresence mode="wait">
+        {phase === 'warning' && (
+          <motion.div 
+            key="warning"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.2 }}
+            className="text-center space-y-8 p-12 border-8 border-red-600 bg-red-600/5 rounded-[4rem] animate-pulse relative"
+          >
+            <div className="absolute inset-0 bg-red-600/10 blur-3xl rounded-full"></div>
+            <AlertTriangle size={140} className="text-red-600 mx-auto relative z-10" />
+            <h1 className="text-7xl font-black text-red-600 tracking-tighter relative z-10">WARRING WARRING WARRING</h1>
+            <p className="text-4xl font-bold text-white max-w-3xl leading-relaxed relative z-10" dir="rtl">
+              هنالك محاولة الى تعقب عملية التحويل التي جرت منذ قليل
+            </p>
+            <div className="text-5xl font-mono font-black text-red-500 relative z-10">
+              SECURE_LOCKDOWN_IN: {warningTime}s
+            </div>
+          </motion.div>
+        )}
+
+        {phase === 'satellite' && (
+          <motion.div 
+            key="satellite"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="relative w-full h-full flex items-center justify-center bg-slate-950"
+          >
+             <div className="absolute inset-0 opacity-30">
+               <img 
+                 src="https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?q=80&w=2072&auto=format&fit=crop" 
+                 className="w-full h-full object-cover" 
+                 referrerPolicy="no-referrer"
+               />
+             </div>
+
+             <svg className="absolute inset-0 w-full h-full z-10" viewBox="0 0 1000 600">
+                {/* Satellite 1 */}
+                <motion.g initial={{ x: 150, y: 150 }} animate={{ y: [150, 160, 150] }} transition={{ duration: 4, repeat: Infinity }}>
+                  <circle cx="0" cy="0" r="15" fill="#00f2ff" />
+                  <rect x="-30" y="-4" width="60" height="8" fill="#00f2ff" opacity="0.6" />
+                  <text x="0" y="35" fill="#00f2ff" fontSize="10" textAnchor="middle" className="font-mono">NATO_SAT_01</text>
+                </motion.g>
+
+                {/* Satellite 2 (Sky) */}
+                <motion.g initial={{ x: 500, y: 80 }} animate={{ y: [80, 90, 80] }} transition={{ duration: 5, repeat: Infinity }}>
+                  <circle cx="0" cy="0" r="15" fill="#00f2ff" />
+                  <rect x="-30" y="-4" width="60" height="8" fill="#00f2ff" opacity="0.6" />
+                  <text x="0" y="35" fill="#00f2ff" fontSize="10" textAnchor="middle" className="font-mono">RELAY_SAT_SKY</text>
+                </motion.g>
+
+                {/* Satellite 3 (Israel) */}
+                <motion.g initial={{ x: 800, y: 350 }} animate={{ y: [350, 360, 350] }} transition={{ duration: 6, repeat: Infinity }}>
+                  <circle cx="0" cy="0" r="15" fill="#00f2ff" />
+                  <rect x="-30" y="-4" width="60" height="8" fill="#00f2ff" opacity="0.6" />
+                  <text x="0" y="35" fill="#00f2ff" fontSize="10" textAnchor="middle" className="font-mono">ISR_SAT_NODE</text>
+                </motion.g>
+
+                {/* Beams */}
+                <motion.line 
+                  x1="150" y1="150" x2="500" y2="80" 
+                  stroke="#00f2ff" strokeWidth="2" strokeDasharray="8,4"
+                  initial={{ pathLength: 0, opacity: 0 }}
+                  animate={{ pathLength: 1, opacity: 1 }}
+                  transition={{ duration: 3, delay: 1 }}
+                />
+                <motion.line 
+                  x1="500" y1="80" x2="800" y2="350" 
+                  stroke="#00f2ff" strokeWidth="2" strokeDasharray="8,4"
+                  initial={{ pathLength: 0, opacity: 0 }}
+                  animate={{ pathLength: 1, opacity: 1 }}
+                  transition={{ duration: 3, delay: 5 }}
+                />
+
+                {/* Internet Source Attempt */}
+                <motion.g initial={{ x: 500, y: 480 }} opacity={0} animate={{ opacity: 1 }} transition={{ delay: 9 }}>
+                  <rect x="-60" y="-35" width="120" height="70" fill="none" stroke="#ff0000" strokeWidth="2" />
+                  <text x="0" y="0" fill="#ff0000" fontSize="12" textAnchor="middle" className="font-mono font-bold">INT_GATEWAY_SRC</text>
+                </motion.g>
+
+                <motion.line 
+                  x1="800" y1="350" x2="500" y2="480" 
+                  stroke="#ff0000" strokeWidth="4"
+                  initial={{ pathLength: 0, opacity: 0 }}
+                  animate={{ pathLength: 1, opacity: [0, 1, 0] }}
+                  transition={{ duration: 2, delay: 10, repeat: 2 }}
+                />
+
+                {/* Failure Message */}
+                <motion.text 
+                  x="500" y="550" fill="#ff0000" fontSize="28" fontWeight="900" textAnchor="middle"
+                  initial={{ opacity: 0, scale: 0 }}
+                  animate={{ opacity: [0, 1, 1, 0], scale: [0, 1.2, 1, 0] }}
+                  transition={{ duration: 4, delay: 12 }}
+                >
+                  ACCESS_DENIED: CONNECTION_FAILED
+                </motion.text>
+             </svg>
+
+             <div className="absolute bottom-20 text-center space-y-4">
+               <p className="text-cyan-400 font-mono text-lg animate-pulse tracking-widest">RE-ROUTING VIA QUANTUM MESH...</p>
+               <p className="text-red-500 font-mono text-sm font-bold">COUNTER_TRACE_ACTIVE / BLOCKING_UPLINK</p>
+             </div>
+          </motion.div>
+        )}
+
+        {phase === 'resolution' && (
+          <motion.div 
+            key="resolution"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center space-y-10"
+          >
+            <motion.div 
+              animate={{ scale: [1, 1.1, 1] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              className="w-40 h-40 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto border-4 border-emerald-500 shadow-[0_0_50px_rgba(16,185,129,0.3)]"
+            >
+              <ShieldCheck size={80} className="text-emerald-500" />
+            </motion.div>
+            <div className="space-y-4">
+              <h1 className="text-6xl font-black text-emerald-500 tracking-tighter" dir="rtl">تم احباط عملية التعقب</h1>
+              <p className="text-3xl font-bold text-slate-300" dir="rtl">ان النظام في امان الآن</p>
+            </div>
+            <div className="w-80 h-2 bg-slate-800 rounded-full mx-auto overflow-hidden border border-slate-700">
+              <motion.div 
+                initial={{ width: 0 }}
+                animate={{ width: '100%' }}
+                transition={{ duration: 10, ease: "linear" }}
+                className="h-full bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)]"
+              />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -511,6 +720,7 @@ export default function App() {
   // Transfer Progress State
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showAnimation, setShowAnimation] = useState(false);
+  const [showNatoEvent, setShowNatoEvent] = useState(false);
   const [transferProgress, setTransferProgress] = useState(0);
   const [transferMessage, setTransferMessage] = useState('');
   const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
@@ -673,6 +883,19 @@ export default function App() {
 
   const handleAnimationComplete = () => {
     setShowAnimation(false);
+    if (transferData.server === 'حلف الناتو') {
+      setShowNatoEvent(true);
+    } else {
+      finalizeTransfer();
+    }
+  };
+
+  const handleNatoEventComplete = () => {
+    setShowNatoEvent(false);
+    finalizeTransfer();
+  };
+
+  const finalizeTransfer = () => {
     const amountNum = parseFloat(transferData.amount);
     const txId = `TX-${generateId()}`;
     const newTransaction: Transaction = {
@@ -699,7 +922,8 @@ export default function App() {
             iban: newTransaction.iban,
             amount: newTransaction.amount,
             status: newTransaction.status,
-            created_by: newTransaction.createdBy
+            created_by: newTransaction.createdBy,
+            server: newTransaction.server
           }]);
         
         if (txError) throw txError;
@@ -723,7 +947,6 @@ export default function App() {
           setUsers(prev => prev.map(u => u.id === currentUser!.id ? { ...u, balance: newBalance, storedTransfersCount: newCount } : u));
           setCurrentUser(prev => prev ? { ...prev, balance: newBalance, storedTransfersCount: newCount } : null);
         } else if (isStoredIban(transferData.iban)) {
-          // Even for unlimited users, we might want to track count if needed, but usually manager is exempt
           const newCount = (currentUser!.storedTransfersCount || 0) + 1;
           await supabase.from('users').update({ stored_transfers_count: newCount }).eq('id', currentUser!.id);
           setUsers(prev => prev.map(u => u.id === currentUser!.id ? { ...u, storedTransfersCount: newCount } : u));
@@ -1191,6 +1414,8 @@ export default function App() {
                         <option value="بريطانيا">بريطانيا</option>
                         <option value="فرنسا">فرنسا</option>
                         <option value="دول الخليج">دول الخليج</option>
+                        <option value="البنتاغون">البنتاغون</option>
+                        <option value="حلف الناتو">حلف الناتو</option>
                       </select>
                       <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-slate-400">
                         <ArrowUpRight size={18} className="rotate-90" />
@@ -1749,6 +1974,12 @@ export default function App() {
       <AnimatePresence>
         {showAnimation && (
           <TransferAnimation onComplete={handleAnimationComplete} server={transferData.server} />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showNatoEvent && (
+          <NatoSecurityEvent onComplete={handleNatoEventComplete} />
         )}
       </AnimatePresence>
     </div>
