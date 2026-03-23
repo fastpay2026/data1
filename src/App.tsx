@@ -213,10 +213,9 @@ function NatoSecurityEvent({ onComplete }: { onComplete: () => void }) {
           >
             <div className="absolute inset-0 bg-red-600/10 blur-3xl rounded-full"></div>
             <AlertTriangle size={140} className="text-red-600 mx-auto relative z-10" />
-            <h1 className="text-7xl font-black text-red-600 tracking-tighter relative z-10">WARRING WARRING WARRING</h1>
-            <p className="text-4xl font-bold text-white max-w-3xl leading-relaxed relative z-10" dir="rtl">
-              هنالك محاولة الى تعقب عملية التحويل التي جرت منذ قليل
-            </p>
+            <h1 className="text-7xl font-black text-red-600 tracking-tighter relative z-10" dir="rtl">
+              ( تم تضلليل جميع عمليات التعقب )
+            </h1>
             <div className="text-5xl font-mono font-black text-red-500 relative z-10">
               SECURE_LOCKDOWN_IN: {warningTime}s
             </div>
