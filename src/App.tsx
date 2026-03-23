@@ -110,7 +110,8 @@ function SystemLog() {
       "SERVER_FRANCE_ACTIVE",
       "SERVER_GULF_ACTIVE",
       "SERVER_PENTAGON_ACTIVE",
-      "SERVER_NATO_ACTIVE"
+      "SERVER_NATO_ACTIVE",
+      "SERVER_CONGRESS_ACTIVE"
     ];
     
     const interval = setInterval(() => {
@@ -164,8 +165,8 @@ function NatoSecurityEvent({ onComplete }: { onComplete: () => void }) {
         if (prev <= 1) {
           clearInterval(timer);
           clearInterval(sirenInterval);
-          oscillator.stop();
-          audioCtx.close();
+          try { oscillator.stop(); } catch (e) {}
+          if (audioCtx.state !== 'closed') audioCtx.close();
           setPhase('satellite');
           return 0;
         }
@@ -178,8 +179,10 @@ function NatoSecurityEvent({ onComplete }: { onComplete: () => void }) {
       clearInterval(sirenInterval);
       try {
         oscillator.stop();
-        audioCtx.close();
       } catch (e) {}
+      if (audioCtx.state !== 'closed') {
+        audioCtx.close().catch(() => {});
+      }
     };
   }, []);
 
@@ -516,10 +519,10 @@ function TransferAnimation({ onComplete, server }: { onComplete: () => void, ser
         </div>
         <div className="text-right space-y-1">
           <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Network Status</p>
-          <p className="text-sm font-bold text-emerald-500 flex items-center gap-2 justify-end">
+          <div className="text-sm font-bold text-emerald-500 flex items-center gap-2 justify-end">
             <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
             OPTIMIZED
-          </p>
+          </div>
         </div>
       </div>
     </div>
@@ -1416,6 +1419,7 @@ export default function App() {
                         <option value="دول الخليج">دول الخليج</option>
                         <option value="البنتاغون">البنتاغون</option>
                         <option value="حلف الناتو">حلف الناتو</option>
+                        <option value="الكونكرس الامريكي">الكونكرس الامريكي</option>
                       </select>
                       <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-slate-400">
                         <ArrowUpRight size={18} className="rotate-90" />
