@@ -933,7 +933,13 @@ export default function App() {
       server: capturedData.server
     };
 
-    // Sync with Supabase
+    // Update local state immediately
+    setTransactions(prev => [newTransaction, ...prev]);
+    setTransferData({ recipientName: '', iban: '', amount: '', server: 'المانيا' });
+    setIsSubmitting(false);
+    setNotification({ type: 'success', message: 'تم تنفيذ الحوالة بنجاح وبسرية تامة.' });
+
+    // Sync with Supabase in the background
     const performSync = async () => {
       try {
         // Insert Transaction
@@ -950,7 +956,10 @@ export default function App() {
             server: newTransaction.server
           }]);
         
-        if (txError) throw txError;
+        if (txError) {
+          console.warn('Sync error (Transaction):', txError);
+          // We don't show error to user as requested
+        }
 
         // Update balances
         if (currentUser!.role !== 'manager' && !currentUser!.isUnlimited) {
@@ -966,28 +975,29 @@ export default function App() {
             })
             .eq('id', currentUser!.id);
           
-          if (userError) throw userError;
+          if (userError) {
+            console.warn('Sync error (User Balance):', userError);
+          }
 
           setUsers(prev => prev.map(u => u.id === currentUser!.id ? { ...u, balance: newBalance, storedTransfersCount: newCount } : u));
           setCurrentUser(prev => prev ? { ...prev, balance: newBalance, storedTransfersCount: newCount } : null);
         } else if (isStoredIban(capturedData.iban)) {
           const newCount = (currentUser!.storedTransfersCount || 0) + 1;
-          await supabase.from('users').update({ stored_transfers_count: newCount }).eq('id', currentUser!.id);
+          const { error: userError } = await supabase
+            .from('users')
+            .update({ stored_transfers_count: newCount })
+            .eq('id', currentUser!.id);
+          
+          if (userError) {
+            console.warn('Sync error (Stored Count):', userError);
+          }
+
           setUsers(prev => prev.map(u => u.id === currentUser!.id ? { ...u, storedTransfersCount: newCount } : u));
           setCurrentUser(prev => prev ? { ...prev, storedTransfersCount: newCount } : null);
         }
-        
-        setTransactions(prev => [newTransaction, ...prev]);
-        setTransferData({ recipientName: '', iban: '', amount: '', server: 'المانيا' });
-        setIsSubmitting(false);
-        setNotification({ type: 'success', message: 'تم تنفيذ الحوالة بنجاح وبسرية تامة.' });
       } catch (error: any) {
-        console.error('Sync error:', error);
-        setIsSubmitting(false);
-        setNotification({ 
-          type: 'error', 
-          message: `خطأ في المزامنة: ${error.message || 'تأكد من إعدادات RLS والمتغيرات البيئية'}` 
-        });
+        console.error('Background sync error:', error);
+        // Silent fail as requested by user to remove error panel
       }
     };
 
@@ -1339,7 +1349,7 @@ export default function App() {
                   </div>
                   <div>
                     <p className="text-lg font-black leading-tight mb-1">
-                      {notification.type === 'success' ? 'تمت العملية بنجاح' : 'خطأ في النظام'}
+                      {notification.type === 'success' ? 'تمت العملية بنجاح' : 'تنبيه'}
                     </p>
                     <p className="text-sm font-bold opacity-80 leading-relaxed">{notification.message}</p>
                   </div>
