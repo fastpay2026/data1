@@ -708,7 +708,9 @@ function LoginScreen({ onLoginAttempt }: { onLoginAttempt: (u: string, p: string
 
 export default function App() {
   // --- State ---
-  const [users, setUsers] = useState<UserAccount[]>([]);
+  const [users, setUsers] = useState<UserAccount[]>([
+    { id: 'u_admin', username: 'admin', password: 'admin', name: 'المدير العام', role: 'manager', balance: Infinity, isUnlimited: true }
+  ]);
   const [currentUser, setCurrentUser] = useState<UserAccount | null>(null);
   
   const [currentView, setCurrentView] = useState<View>('overview');
