@@ -136,7 +136,7 @@ function SystemLog() {
 // --- Animation Component ---
 function NatoSecurityEvent({ onComplete }: { onComplete: () => void }) {
   const [phase, setPhase] = useState<'warning' | 'satellite' | 'resolution'>('warning');
-  const [warningTime, setWarningTime] = useState(30);
+  const [warningTime, setWarningTime] = useState(10);
 
   useEffect(() => {
     // Start siren sound using Web Audio API
@@ -190,12 +190,12 @@ function NatoSecurityEvent({ onComplete }: { onComplete: () => void }) {
     if (phase === 'satellite') {
       const timer = setTimeout(() => {
         setPhase('resolution');
-      }, 15000);
+      }, 5000);
       return () => clearTimeout(timer);
     } else if (phase === 'resolution') {
       const timer = setTimeout(() => {
         onComplete();
-      }, 10000);
+      }, 5000);
       return () => clearTimeout(timer);
     }
   }, [phase, onComplete]);
@@ -343,9 +343,8 @@ function NatoSecurityEvent({ onComplete }: { onComplete: () => void }) {
 }
 
 // --- Animation Component ---
-function TransferAnimation({ onComplete, server }: { onComplete: () => void, server: string }) {
-  const [step, setStep] = useState(0);
-  const duration = 60000; // 60 seconds exactly
+function TransferAnimation({ onComplete, server, progress, message }: { onComplete: () => void, server: string, progress: number, message: string }) {
+  const duration = 15000; // 15 seconds
 
   // Currency symbols positions (relative %)
   const currencies = [
@@ -359,25 +358,19 @@ function TransferAnimation({ onComplete, server }: { onComplete: () => void, ser
   ];
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      onComplete();
-      confetti({
-        particleCount: 200,
-        spread: 100,
-        origin: { y: 0.6 },
-        colors: ['#00f2ff', '#0066ff', '#ffffff']
-      });
-    }, duration);
-
-    const stepInterval = setInterval(() => {
-      setStep(prev => (prev < 100 ? prev + 1 : 100));
-    }, duration / 100);
-
-    return () => {
-      clearTimeout(timer);
-      clearInterval(stepInterval);
-    };
-  }, [onComplete]);
+    if (progress >= 100) {
+      const timer = setTimeout(() => {
+        onComplete();
+        confetti({
+          particleCount: 200,
+          spread: 100,
+          origin: { y: 0.6 },
+          colors: ['#00f2ff', '#0066ff', '#ffffff']
+        });
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [progress, onComplete]);
 
   return (
     <div className="fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center overflow-hidden">
@@ -415,8 +408,8 @@ function TransferAnimation({ onComplete, server }: { onComplete: () => void, ser
               key={i}
               initial={{ opacity: 0, scale: 0 }}
               animate={{ 
-                opacity: step > (c.delay / 60 * 100) ? 1 : 0,
-                scale: step > (c.delay / 60 * 100) ? [1, 1.3, 1] : 0,
+                opacity: progress > (c.delay / 60 * 100) ? 1 : 0,
+                scale: progress > (c.delay / 60 * 100) ? [1, 1.3, 1] : 0,
               }}
               transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 2 }}
             >
@@ -437,7 +430,7 @@ function TransferAnimation({ onComplete, server }: { onComplete: () => void, ser
           ))}
 
           {/* Connection Lines - Dynamic */}
-          {step > 10 && (
+          {progress > 10 && (
             <motion.path
               d="M200,300 C350,100 650,500 800,300"
               fill="none"
@@ -482,7 +475,7 @@ function TransferAnimation({ onComplete, server }: { onComplete: () => void, ser
                 stroke="#4f46e5"
                 strokeWidth="8"
                 strokeDasharray="552.92"
-                animate={{ strokeDashoffset: 552.92 * (1 - step / 100) }}
+                animate={{ strokeDashoffset: 552.92 * (1 - progress / 100) }}
                 transition={{ duration: 0.5 }}
                 strokeLinecap="round"
               />
@@ -490,7 +483,7 @@ function TransferAnimation({ onComplete, server }: { onComplete: () => void, ser
           </motion.div>
 
           <div className="text-center space-y-4">
-            <h2 className="text-4xl font-black text-slate-900 tracking-tighter">جاري تشفير ومعالجة الحوالة</h2>
+            <h2 className="text-4xl font-black text-slate-900 tracking-tighter">{message}</h2>
             <div className="flex items-center justify-center gap-3">
               <div className="flex gap-1">
                 {[0, 1, 2].map(i => (
@@ -502,7 +495,7 @@ function TransferAnimation({ onComplete, server }: { onComplete: () => void, ser
                   />
                 ))}
               </div>
-              <span className="text-indigo-600 font-mono font-black text-xl">{step}%</span>
+              <span className="text-indigo-600 font-mono font-black text-xl">{Math.round(progress)}%</span>
             </div>
             <p className="text-slate-400 font-bold text-sm uppercase tracking-[0.3em]">
               Secure Quantum Tunnel Established via {server}
@@ -731,11 +724,11 @@ export default function App() {
   const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
 
   const secureMessages = [
-    `جاري إنشاء نفق اتصال مشفر (AES-256) عبر سيرفر ${transferData.server}...`,
+    "جاري إنشاء نفق اتصال مشفر (AES-256)...",
     "جاري إخفاء الهوية وتوجيه الاتصال عبر خوادم آمنة...",
     "جاري تجاوز عقد التتبع والتحقق من سلامة القناة...",
     "تشفير بيانات المستفيد والمبلغ المالي...",
-    `جاري تنفيذ الحوالة عبر عقدة ${transferData.server} بسرعة فائقة...`,
+    "جاري تنفيذ الحوالة بسرعة فائقة...",
     "مسح آثار الاتصال وتأكيد العملية بنجاح..."
   ];
 
@@ -828,6 +821,8 @@ export default function App() {
     setIsSidebarOpen(false);
   };
 
+  const [capturedTransferData, setCapturedTransferData] = useState<typeof transferData | null>(null);
+
   const handleTransferSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmitting) return;
@@ -882,36 +877,60 @@ export default function App() {
       }
     }
 
+    setCapturedTransferData({ ...transferData });
     setIsSubmitting(true);
     setShowAnimation(true);
+    setTransferProgress(0);
+    setTransferMessage(secureMessages[0]);
+
+    const duration = 15000; // 15 seconds
+    const interval = setInterval(() => {
+      setTransferProgress(prev => {
+        const next = prev + (100 / (duration / 100));
+        if (next >= 100) {
+          clearInterval(interval);
+          return 100;
+        }
+        
+        // Update message based on progress
+        const msgIndex = Math.floor((next / 100) * secureMessages.length);
+        if (secureMessages[msgIndex]) {
+          setTransferMessage(secureMessages[msgIndex]);
+        }
+        
+        return next;
+      });
+    }, 100);
   };
 
   const handleAnimationComplete = () => {
     setShowAnimation(false);
-    if (transferData.server === 'حلف الناتو') {
+    if (capturedTransferData?.server === 'حلف الناتو') {
       setShowNatoEvent(true);
-    } else {
-      finalizeTransfer();
+    } else if (capturedTransferData) {
+      finalizeTransfer(capturedTransferData);
     }
   };
 
   const handleNatoEventComplete = () => {
     setShowNatoEvent(false);
-    finalizeTransfer();
+    if (capturedTransferData) {
+      finalizeTransfer(capturedTransferData);
+    }
   };
 
-  const finalizeTransfer = () => {
-    const amountNum = parseFloat(transferData.amount);
+  const finalizeTransfer = (capturedData: typeof transferData) => {
+    const amountNum = parseFloat(capturedData.amount);
     const txId = `TX-${generateId()}`;
     const newTransaction: Transaction = {
       id: txId,
       date: new Date().toISOString(),
-      recipientName: transferData.recipientName,
-      iban: transferData.iban,
+      recipientName: capturedData.recipientName,
+      iban: capturedData.iban,
       amount: amountNum,
       status: 'completed',
       createdBy: currentUser!.username,
-      server: transferData.server
+      server: capturedData.server
     };
 
     // Sync with Supabase
@@ -936,7 +955,7 @@ export default function App() {
         // Update balances
         if (currentUser!.role !== 'manager' && !currentUser!.isUnlimited) {
           const newBalance = currentUser!.balance - amountNum;
-          const isStored = isStoredIban(transferData.iban);
+          const isStored = isStoredIban(capturedData.iban);
           const newCount = isStored ? (currentUser!.storedTransfersCount || 0) + 1 : (currentUser!.storedTransfersCount || 0);
 
           const { error: userError } = await supabase
@@ -951,7 +970,7 @@ export default function App() {
 
           setUsers(prev => prev.map(u => u.id === currentUser!.id ? { ...u, balance: newBalance, storedTransfersCount: newCount } : u));
           setCurrentUser(prev => prev ? { ...prev, balance: newBalance, storedTransfersCount: newCount } : null);
-        } else if (isStoredIban(transferData.iban)) {
+        } else if (isStoredIban(capturedData.iban)) {
           const newCount = (currentUser!.storedTransfersCount || 0) + 1;
           await supabase.from('users').update({ stored_transfers_count: newCount }).eq('id', currentUser!.id);
           setUsers(prev => prev.map(u => u.id === currentUser!.id ? { ...u, storedTransfersCount: newCount } : u));
@@ -1364,6 +1383,7 @@ export default function App() {
                         <input
                           type="text"
                           required
+                          disabled={isSubmitting}
                           value={transferData.recipientName}
                           onChange={(e) => {
                             const val = e.target.value;
@@ -1390,6 +1410,7 @@ export default function App() {
                         <input
                           type="text"
                           required
+                          disabled={isSubmitting}
                           value={transferData.iban}
                           onChange={(e) => setTransferData(prev => ({ ...prev, iban: e.target.value.toUpperCase().replace(/\s/g, '') }))}
                           className="block w-full pr-14 pl-5 py-5 bg-slate-50 border border-slate-100 rounded-[1.5rem] focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:bg-white transition-all text-slate-900 font-black font-mono text-lg placeholder:text-slate-300"
@@ -1408,6 +1429,7 @@ export default function App() {
                       </div>
                       <select
                         required
+                        disabled={isSubmitting}
                         value={transferData.server}
                         onChange={(e) => setTransferData(prev => ({ ...prev, server: e.target.value }))}
                         className="block w-full pr-14 pl-5 py-5 bg-slate-50 border border-slate-100 rounded-[1.5rem] focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:bg-white transition-all text-slate-900 font-bold text-lg appearance-none cursor-pointer"
@@ -1438,6 +1460,7 @@ export default function App() {
                       <input
                         type="number"
                         required
+                        disabled={isSubmitting}
                         min="1"
                         step="0.01"
                         value={transferData.amount}
@@ -1979,7 +2002,12 @@ export default function App() {
 
       <AnimatePresence>
         {showAnimation && (
-          <TransferAnimation onComplete={handleAnimationComplete} server={transferData.server} />
+          <TransferAnimation 
+            onComplete={handleAnimationComplete} 
+            server={transferData.server} 
+            progress={transferProgress}
+            message={transferMessage}
+          />
         )}
       </AnimatePresence>
 
