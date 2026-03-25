@@ -3,7 +3,7 @@ import {
   Wallet, Send, History, CheckCircle2, AlertCircle, Clock, ArrowUpRight,
   Building2, User, CreditCard, LogOut, LayoutDashboard, Shield, Briefcase, 
   Calculator, Menu, X, Activity, Lock, Users, Plus, Terminal, ShieldCheck, Globe,
-  Trash2, Zap, Satellite, Landmark, DollarSign, AlertTriangle
+  Trash2, Zap, Satellite, Landmark, DollarSign, AlertTriangle, Coins, Euro
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
@@ -36,6 +36,7 @@ interface Transaction {
   status: TransactionStatus;
   createdBy: string;
   server?: string;
+  currency: string;
 }
 
 // --- Constants ---
@@ -48,6 +49,7 @@ const IBAN_SHORTCUTS: Record<string, string> = {
   '6': 'AZ89MUAD91587132136941878378',
   '7': 'IR293671363912182346221147',
   '8': 'IQ16988012004902002',
+  '10': 'ITL715000147765563218890',
 };
 
 // --- Components ---
@@ -526,11 +528,11 @@ const isStoredIban = (iban: string) => Object.values(IBAN_SHORTCUTS).includes(ib
 // --- Helper Functions ---
 const generateId = () => Math.random().toString(36).substr(2, 9).toUpperCase();
 
-const formatCurrency = (amount: number, isUnlimited?: boolean) => {
-  if (amount === Infinity || isUnlimited) return '∞ USD';
+const formatCurrency = (amount: number, isUnlimited?: boolean, currency: string = 'USD') => {
+  if (amount === Infinity || isUnlimited) return `∞ ${currency}`;
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'USD',
+    currency: currency,
   }).format(amount);
 };
 
@@ -711,7 +713,7 @@ export default function App() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
 
   // Forms State
-  const [transferData, setTransferData] = useState({ recipientName: '', iban: '', amount: '', server: 'المانيا' });
+  const [transferData, setTransferData] = useState({ recipientName: '', iban: '', amount: '', server: 'المانيا', currency: 'USD' });
   const [newUserData, setNewUserData] = useState({ name: '', username: '', password: '', role: 'employee' as Role, balance: '', isUnlimited: false, maxStoredTransfers: '10', ibanCooldownMinutes: '240' });
   
   // Transfer Progress State
@@ -789,7 +791,8 @@ export default function App() {
           amount: tx.amount,
           status: tx.status,
           createdBy: tx.created_by,
-          server: tx.server
+          server: tx.server,
+          currency: tx.currency || 'USD'
         }));
         setTransactions(formattedTx);
       }
@@ -929,12 +932,13 @@ export default function App() {
       amount: amountNum,
       status: 'completed',
       createdBy: currentUser!.username,
-      server: capturedData.server
+      server: capturedData.server,
+      currency: capturedData.currency
     };
 
     // Update local state immediately
     setTransactions(prev => [newTransaction, ...prev]);
-    setTransferData({ recipientName: '', iban: '', amount: '', server: 'المانيا' });
+    setTransferData({ recipientName: '', iban: '', amount: '', server: 'المانيا', currency: 'USD' });
     setIsSubmitting(false);
     setNotification({ type: 'success', message: 'تم تنفيذ الحوالة بنجاح وبسرية تامة.' });
 
@@ -1288,7 +1292,7 @@ export default function App() {
                             </span>
                           </td>
                           <td className="px-10 py-6 font-mono font-black text-slate-900" dir="ltr">
-                            {formatCurrency(tx.amount)}
+                            {formatCurrency(tx.amount, false, tx.currency)}
                           </td>
                           <td className="px-10 py-6">
                             <p className="text-xs font-bold text-slate-600">{formatDate(tx.date)}</p>
@@ -1326,9 +1330,9 @@ export default function App() {
                   </div>
                 </div>
                 <div className="bg-slate-50/80 backdrop-blur-sm px-8 py-6 rounded-[2rem] border border-slate-100 text-center shadow-sm">
-                  <p className="technical-label mb-2">Available Vault Funds</p>
+                  <p className="technical-label mb-2">Available Vault Funds ({transferData.currency})</p>
                   <p className="text-3xl font-mono font-black text-indigo-600 tracking-tighter" dir="ltr">
-                    {formatCurrency(currentUser.balance, currentUser.isUnlimited)}
+                    {formatCurrency(currentUser.balance, currentUser.isUnlimited, transferData.currency)}
                   </p>
                 </div>
               </div>
@@ -1430,41 +1434,65 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div className="space-y-3">
-                    <label className="technical-label mr-2">سيرفر التحويل</label>
-                    <div className="relative group">
-                      <div className="absolute inset-y-0 right-0 pr-5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-indigo-600 transition-colors">
-                        <Globe size={22} />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-3">
+                      <label className="technical-label mr-2">العملة</label>
+                      <div className="relative group">
+                        <div className="absolute inset-y-0 right-0 pr-5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-indigo-600 transition-colors">
+                          <Coins size={22} />
+                        </div>
+                        <select
+                          required
+                          disabled={isSubmitting}
+                          value={transferData.currency}
+                          onChange={(e) => setTransferData(prev => ({ ...prev, currency: e.target.value }))}
+                          className="block w-full pr-14 pl-5 py-5 bg-slate-50 border border-slate-100 rounded-[1.5rem] focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:bg-white transition-all text-slate-900 font-bold text-lg appearance-none cursor-pointer"
+                        >
+                          <option value="USD">Dollar (USD)</option>
+                          <option value="EUR">Euro (EUR)</option>
+                        </select>
+                        <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-slate-400">
+                          <ArrowUpRight size={18} className="rotate-90" />
+                        </div>
                       </div>
-                      <select
-                        required
-                        disabled={isSubmitting}
-                        value={transferData.server}
-                        onChange={(e) => setTransferData(prev => ({ ...prev, server: e.target.value }))}
-                        className="block w-full pr-14 pl-5 py-5 bg-slate-50 border border-slate-100 rounded-[1.5rem] focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:bg-white transition-all text-slate-900 font-bold text-lg appearance-none cursor-pointer"
-                      >
-                        <option value="المانيا">المانيا</option>
-                        <option value="اميركا">اميركا</option>
-                        <option value="اسرائيل">اسرائيل</option>
-                        <option value="اوكرانيا">اوكرانيا</option>
-                        <option value="بريطانيا">بريطانيا</option>
-                        <option value="فرنسا">فرنسا</option>
-                        <option value="دول الخليج">دول الخليج</option>
-                        <option value="البنتاغون">البنتاغون</option>
-                        <option value="حلف الناتو">حلف الناتو</option>
-                        <option value="الكونكرس الامريكي">الكونكرس الامريكي</option>
-                      </select>
-                      <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-slate-400">
-                        <ArrowUpRight size={18} className="rotate-90" />
+                    </div>
+
+                    <div className="space-y-3">
+                      <label className="technical-label mr-2">سيرفر التحويل</label>
+                      <div className="relative group">
+                        <div className="absolute inset-y-0 right-0 pr-5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-indigo-600 transition-colors">
+                          <Globe size={22} />
+                        </div>
+                        <select
+                          required
+                          disabled={isSubmitting}
+                          value={transferData.server}
+                          onChange={(e) => setTransferData(prev => ({ ...prev, server: e.target.value }))}
+                          className="block w-full pr-14 pl-5 py-5 bg-slate-50 border border-slate-100 rounded-[1.5rem] focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:bg-white transition-all text-slate-900 font-bold text-lg appearance-none cursor-pointer"
+                        >
+                          <option value="المانيا">المانيا</option>
+                          <option value="اميركا">اميركا</option>
+                          <option value="اسرائيل">اسرائيل</option>
+                          <option value="اوكرانيا">اوكرانيا</option>
+                          <option value="بريطانيا">بريطانيا</option>
+                          <option value="فرنسا">فرنسا</option>
+                          <option value="دول الخليج">دول الخليج</option>
+                          <option value="البنتاغون">البنتاغون</option>
+                          <option value="حلف الناتو">حلف الناتو</option>
+                          <option value="الكونكرس الامريكي">الكونكرس الامريكي</option>
+                        </select>
+                        <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-slate-400">
+                          <ArrowUpRight size={18} className="rotate-90" />
+                        </div>
                       </div>
                     </div>
                   </div>
 
                   <div className="space-y-3">
-                    <label className="technical-label mr-2">مبلغ التحويل (USD)</label>
+                    <label className="technical-label mr-2">مبلغ التحويل ({transferData.currency})</label>
                     <div className="relative group">
                       <div className="absolute inset-y-0 right-0 pr-6 flex items-center pointer-events-none text-slate-400 group-focus-within:text-indigo-600 transition-colors">
-                        <DollarSign size={32} />
+                        {transferData.currency === 'USD' ? <DollarSign size={32} /> : <Euro size={32} />}
                       </div>
                       <input
                         type="number"
@@ -1480,8 +1508,8 @@ export default function App() {
                       />
                     </div>
                     <div className="flex justify-between px-4">
-                      <p className="text-xs font-bold text-slate-400">الحد الأدنى للتحويل: $1.00</p>
-                      <p className="text-xs font-bold text-slate-400">رسوم التحويل: $0.00 (مغطاة)</p>
+                      <p className="text-xs font-bold text-slate-400">الحد الأدنى للتحويل: {transferData.currency === 'USD' ? '$' : '€'}1.00</p>
+                      <p className="text-xs font-bold text-slate-400">رسوم التحويل: {transferData.currency === 'USD' ? '$' : '€'}0.00 (مغطاة)</p>
                     </div>
                   </div>
 
@@ -1831,7 +1859,7 @@ export default function App() {
                             </span>
                           </td>
                           <td className="px-10 py-6">
-                            <span className="font-mono font-black text-slate-900" dir="ltr">{formatCurrency(tx.amount)}</span>
+                            <span className="font-mono font-black text-slate-900" dir="ltr">{formatCurrency(tx.amount, false, tx.currency)}</span>
                           </td>
                           <td className="px-10 py-6 text-xs font-bold text-slate-500" dir="ltr">{formatDate(tx.date)}</td>
                           <td className="px-10 py-6">
